@@ -10,13 +10,13 @@ from typing import Dict, List, Any
 
 API_KEY = None
 
-ROUTE = 'Framingham/Worcester Line'
-DEPART_FROM = 'West Natick'
-ARRIVE_AT = 'South Station'
-
-# ROUTE = 'Red Line'
-# DEPART_FROM = 'Andrew'
+# ROUTE = 'Framingham/Worcester Line'
+# DEPART_FROM = 'West Natick'
 # ARRIVE_AT = 'South Station'
+
+ROUTE = 'Red Line'
+DEPART_FROM = 'Andrew'
+ARRIVE_AT = 'South Station'
 
 # ROUTE = 'Wakefield Avenue & Truman Parkway - Ashmont Station'
 # DEPART_FROM = 'Dorchester Ave @ Valley Rd'

@@ -58,4 +58,3 @@ async def update_journey_stop_ids(stop_id: str, journey_stop_ids: Dict, depart_f
                 stop = await mbta_client.get_stop(stop_id)
                 # add the schedule stop_id (child_stop_id) to the correct journey_stop_ids[stop_name]
                 journey_stop_ids[stop.stop_name].append(stop_id)
-                print(f"Added stop_id {stop_id} to journey_stop_ids[{stop.stop_name}]")

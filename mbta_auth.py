@@ -18,7 +18,10 @@ class Auth:
     ) -> ClientResponse:
         """Make an HTTP request with optional query parameters and JSON body."""
         
-        params
+        if params is None:
+            params = {}
+        if self._api_key:
+            params['api_key'] = self._api_key
         
         try:
             response = await self.websession.request(
