@@ -1,4 +1,4 @@
-from aiohttp import ClientConnectorError, ClientResponse, ClientSession
+from aiohttp import ClientConnectionError, ClientResponse, ClientResponseError, ClientSession
 import logging
 from typing import Optional, Dict, Any
 
@@ -36,16 +36,14 @@ class Auth:
             
             return response
             
-        except ClientConnectorError as error:
+        except ClientConnectionError as error:
             logging.error(f"Connection error: {error}")
-            raise CannotConnect(error)
+            raise
+        except ClientResponseError as error:
+            logging.error(f"Client response error: {error.status} - {error.message}")
+            print(f"Error Code: {error.status}, Response: {error.message}")
+            raise
         except Exception as error:
-            logging.error(f"An error occurred: {error}")
+            logging.error(f"An unexpected error occurred: {error}")
             raise
 
-class CannotConnect(Exception):
-    """Exception to indicate connection problems."""
-    
-    def __init__(self, error: Exception) -> None:
-        super().__init__(f"Cannot connect to the API: {error}")
-        self.error = error

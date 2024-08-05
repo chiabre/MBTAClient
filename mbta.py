@@ -1,6 +1,5 @@
 from typing import List, Optional, Dict, Any
 import logging
-from aiohttp import ClientConnectorError, ClientResponse, ClientSession
 from mbta_auth import Auth
 from mbta_route import MBTAroute
 from mbta_stop import MBTAstop
@@ -51,16 +50,6 @@ class MBTA:
     
     async def _fetch_data(self, endpoint: str, payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Helper method to fetch data from API."""
-        try:
-            response = await self.auth.request("get", endpoint, params=payload)
-            return await response.json()
-        except ClientConnectionError as error:
-            logging.error(f"Connection error: {error}")
-            raise CannotConnect(error)
-        except ClientResponseError as error:
-            logging.error(f"Client response error: {error.status} - {error.message}")
-            print(f"Error Code: {error.status}, Response: {error.message}")
-            raise
-        except Exception as error:
-            logging.error(f"An unexpected error occurred: {error}")
-            raise
+        response = await self.auth.request("get", endpoint, params=payload)
+        return await response.json()
+

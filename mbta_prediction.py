@@ -3,15 +3,23 @@ from typing import Any, Dict, Optional
 
 class MBTAprediction:
     """A prediction object to hold information about a prediction."""
+    
+    UNCERTAINTY = {
+        '60': 'Trip that has already started',
+        '120': 'Trip not started and a vehicle is awaiting departure at the origin',
+        '300': 'Vehicle has not yet been assigned to the trip',
+        '301': 'Vehicle appears to be stalled or significantly delayed',
+        '360': 'Trip not started and a vehicle is completing a previous trip'
+    }
 
     def __init__(self, prediction: Dict[str, Any]) -> None:
         attributes = prediction.get('attributes', {})
         
         self.prediction_id: Optional[str] = prediction.get('id')
         self.arrival_time: Optional[str] = attributes.get('arrival_time')
-        self.arrival_uncertainty: Optional[int] = attributes.get('arrival_uncertainty')
+        self.arrival_uncertainty: Optional[str] = self.get_uncertainty_description(attributes.get('arrival_uncertainty'))
         self.departure_time: Optional[str] = attributes.get('departure_time')
-        self.departure_uncertainty: Optional[int] = attributes.get('departure_uncertainty')
+        self.departure_uncertainty: Optional[str] = self.get_uncertainty_description(attributes.get('departure_uncertainty'))
         self.direction_id: Optional[int] = attributes.get('direction_id')
         self.last_trip: Optional[bool] = attributes.get('last_trip')
         self.revenue: Optional[bool] = attributes.get('revenue')
@@ -33,3 +41,8 @@ class MBTAprediction:
     
     def __str__(self) -> str:
         return f"Prediction for trip {self.trip_id} at stop {self.stop_id}"
+
+    def get_uncertainty_description(self, key: Optional[Any]) -> Optional[str]:
+        if key is None:
+            return None
+        return self.UNCERTAINTY.get(str(key), 'None')
