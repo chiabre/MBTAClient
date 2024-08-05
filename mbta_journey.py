@@ -18,29 +18,29 @@ class MBTAjourney:
     def add_stop(self, stop_type: str, stop: 'MBTAjourneyStop') -> None:
         """Add a stop to the journey."""
         self.stops[stop_type] = stop
-
-    def get_stop_by_stop_type(self, stop_type: str) -> Optional['MBTAjourneyStop']:
-        """Return the stop with the given stop_name, or None if not found."""
-        return self.stops.get(stop_type)
     
-    def get_stop_id_by_stop_type(self, stop_type: str) -> Optional[str]:
-        """Return the stop_id of the stop with the given stop_type, or None if not found."""
-        stop = self.stops.get(stop_type)
-        if stop:
-            return stop.stop_id
-        return None
-
     def get_stops(self) -> List['MBTAjourneyStop']:
         """Return all stops in the journey as a list, preserving the order."""
         return list(self.stops.values())
+
+    def get_stop_by_stop_type(self, stop_type: str) -> Optional['MBTAjourneyStop']:
+        """Return the stop with the given stop_type """
+        return self.stops.get(stop_type)
+    
+    # def get_stop_id_by_stop_type(self, stop_type: str) -> Optional[str]:
+    #     """Return the stop_id of the stop with the given stop_type, or None if not found."""
+    #     stop = self.stops.get(stop_type)
+    #     if stop:
+    #         return stop.stop_id
+    #     return None
 
     def count_stops(self) -> int:
         """Count the stops in the journey."""
         return len(self.stops)
 
-    def get_direction_id(self) -> int:
-        """Count the stops in the journey."""
-        return self.direction_id
+    # def get_direction_id(self) -> int:
+    #     """Count the stops in the journey."""
+    #     return self.direction_id
 
 
 class MBTAjourneyStop:

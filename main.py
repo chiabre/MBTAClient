@@ -1,10 +1,9 @@
 import aiohttp
 from mbta_auth import Auth
 from mbta import MBTA
-from mbta_schedule import MBTAschedule
 from mbta_route import MBTAroute
 from mbta_journeys import MBTAjourneys
-from mbta_utils import *
+
 from datetime import datetime
 from typing import Dict, List, Any
 
@@ -14,17 +13,17 @@ API_KEY = None
 # DEPART_FROM = 'West Natick'
 # ARRIVE_AT = 'South Station'
 
-ROUTE = 'Red Line'
-DEPART_FROM = 'Andrew'
-ARRIVE_AT = 'South Station'
+# ROUTE = 'Red Line'
+# DEPART_FROM = 'Andrew'
+# ARRIVE_AT = 'South Station'
 
 # ROUTE = 'Wakefield Avenue & Truman Parkway - Ashmont Station'
 # DEPART_FROM = 'Dorchester Ave @ Valley Rd'
 # ARRIVE_AT = 'River St @ Standard St'
 
-# DEPART_FROM = 'Back Bay'
-# ARRIVE_AT = 'Huntington Ave @ Opera Pl'
-# ROUTE = 'Forest Hills Station - Back Bay Station'
+DEPART_FROM = 'Back Bay'
+ARRIVE_AT = 'Huntington Ave @ Opera Pl'
+ROUTE = 'Forest Hills Station - Back Bay Station'
 
 # DEPART_FROM = 'Charlestown Navy Yard'
 # ARRIVE_AT = 'Long Wharf (South)'

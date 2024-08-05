@@ -120,27 +120,26 @@ class MBTAjourneys:
                 headsign=headsign
             )
             
-    async def _retrieve_stop_type(self, stop_id:str) -> str:
-        
-        # if the  stop_id (child_stop_id) is not tracked in the journey_stop_ids
-        if stop_id not in self.stop_ids['depart_from'] and stop_id not in self.stop_ids['arrive_at']:
-            # extract the stop the schedule stop_id (child_stop_id) belongs to
-            stop = await self.mbta_client.get_stop(stop_id)
-            
-            #if its the departure stop, add the id to the depart_from stop
-            if stop.stop_name == self.depart_from:
-                self.stop_ids['depart_from'].append(stop_id)
-                return 'depart_from'
-            #if its the arrival stop, add the id to the arrive_at stop
-            if stop.stop_name == self.arrive_at:
-                self.stop_ids['arrive_at'].append(stop_id)
-                return 'arrive_at'
-                      
-        if stop_id in self.stop_ids['depart_from']: 
+    async def _retrieve_stop_type(self, stop_id: str) -> str:
+        if stop_id in self.stop_ids['depart_from']:
             return 'depart_from'
-            
-        if stop_id in self.stop_ids['arrive_at']: 
+        
+        if stop_id in self.stop_ids['arrive_at']:
             return 'arrive_at'
+
+        # The stop_id is not tracked; retrieve stop details
+        stop = await self.mbta_client.get_stop(stop_id)
+        
+        # Check and categorize the stop
+        if stop.stop_name == self.depart_from:
+            self.stop_ids['depart_from'].append(stop_id)
+            return 'depart_from'
+        
+        if stop.stop_name == self.arrive_at:
+            self.stop_ids['arrive_at'].append(stop_id)
+            return 'arrive_at'
+        
+
         
     async def _add_predictions(self):
             
