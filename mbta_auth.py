@@ -4,7 +4,7 @@ from typing import Optional, Dict, Any
 
 MBTA_DEFAULT_HOST = "api-v3.mbta.com"
 
-class Auth:
+class MBTAAuth:
     """Class to make authenticated requests to the MBTA v3 API."""
     
     def __init__(self, websession: ClientSession, api_key: Optional[str] = None, host: str = MBTA_DEFAULT_HOST) -> None:
