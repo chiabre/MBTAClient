@@ -26,19 +26,19 @@ class MBTAJourneys:
         """Populate the journeys with schedules, predictions, trips, routes, and alerts."""
         try:
             logging.debug("Starting to populate journeys...")
-            await self._schedules()
-            await self._predictions()
-            self._finalize_journeys()
-            await self._trips()
-            await self._routes()
-            await self._alerts()
+            await self.__schedules()
+            await self.__predictions()
+            self.__finalize_journeys()
+            await self.__trips()
+            await self.__routes()
+            await self.__alerts()
             logging.debug("Finished populating journeys.")
         except Exception as e:
             logging.error(f"Error populating journeys: {e}")
             traceback.print_exc()  # This will print the full traceback to the console
             print()
 
-    async def _schedules(self):
+    async def __schedules(self):
         """Retrieve and process schedules based on the provided stop IDs and route ID."""
         now = datetime.now()
         params = {
@@ -83,37 +83,14 @@ class MBTAJourneys:
             if len(stops) == 2 and (stops[0].stop.id not in self._get_stop_ids_from_stops(self.depart_from_stops) or stops[1].stop.id  not in self._get_stop_ids_from_stops(self.arrive_at_stops)):
                 # delete the yourney from the journeys Dict
                 del self.journeys[schedule.trip_id]
-                
-    def _get_stop_ids_from_stops(self, stops: List[MBTAStop]) -> List[str]:
-        """
-        Extract stop IDs from a list of MBTAstop objects.
-
-        :param stops: List of MBTAstop objects
-        :return: List of stop IDs
-        """
-        stop_ids = [stop.id for stop in stops]
-        return stop_ids
-    
-    def _get_stop_by_id(self, stops: List[MBTAStop], stop_id: str) -> Optional[MBTAStop]:
-        """
-        Retrieve a stop from the list of MBTAstop objects based on the stop ID.
-
-        :param stops: List of MBTAstop objects
-        :param stop_id: The ID of the stop to retrieve
-        :return: The MBTAstop object with the matching stop ID, or None if not found
-        """
-        for stop in stops:
-            if stop.id == stop_id:
-                return stop
-        return None
-                
-    async def _predictions(self):
+                              
+    async def __predictions(self):
         """Retrieve and process predictions based on the provided stop IDs and route ID."""
         
         now = datetime.now().astimezone()
         
         journey_stops = self.depart_from_stops + self.arrive_at_stops
-        journey_stops_ids = self._get_stop_ids_from_stops(journey_stops)
+        journey_stops_ids = self._get_stop_ids_from_stops(self.depart_from_stops + self.arrive_at_stops)
         depart_stop_ids = self._get_stop_ids_from_stops(self.depart_from_stops)
         arrival_stop_ids = self._get_stop_ids_from_stops(self.arrive_at_stops)
 
@@ -200,9 +177,8 @@ class MBTAJourneys:
                         arrival_uncertainty=prediction.arrival_uncertainty,
                         departure_uncertainty=prediction.departure_uncertainty
                     )
-            
-                
-    def _finalize_journeys(self):
+                         
+    def __finalize_journeys(self):
         """Clean up and sort valid journeys."""
         processed_journeys = {}
         
@@ -224,13 +200,7 @@ class MBTAJourneys:
         # Limit the number of journeys to `self.max_journeys`
         self.journeys = dict(list(sorted_journeys.items())[:self.max_journeys])
 
-
-    def _get_first_stop_departure_time(self, journey: MBTAJourney) -> datetime:
-        """Get the departure time of the first stop in a journey."""
-        departure_stop = journey.journey_stops[0]
-        return departure_stop.get_time()
-
-    async def _trips(self):
+    async def __trips(self):
         """Retrieve trip details for each journey."""
         for trip_id, journey in self.journeys.items():
             try:
@@ -239,7 +209,7 @@ class MBTAJourneys:
             except Exception as e:
                 logging.error(f"Error retrieving trip {trip_id}: {e}")
             
-    async def _routes(self):
+    async def __routes(self):
         """Retrieve route details for each journey."""
 
         routes: List[MBTARoute] = []
@@ -266,12 +236,12 @@ class MBTAJourneys:
             if journey.trip and journey.trip.route_id in route_dict:
                 journey.route = route_dict[journey.trip.route_id]
                 
-    async def _alerts(self):
+    async def __alerts(self):
         """Retrieve and associate alerts with the relevant journeys."""
         params = {
-            'filter[stop]': ','.join(self.get_all_stop_ids()),
-            'filter[trip]': ','.join(self.get_all_trip_ids()),
-            'filter[route]': ','.join(self.get_all_route_ids()),
+            'filter[stop]': ','.join(self._get_all_stop_ids()),
+            'filter[trip]': ','.join(self._get_all_trip_ids()),
+            'filter[route]': ','.join(self._get_all_route_ids()),
             'filter[activity]': 'BOARD,EXIT,RIDE'
         }
         
@@ -285,7 +255,11 @@ class MBTAJourneys:
             
                 for informed_entity in alert.informed_entities:
                     for journey in self.journeys.values():
-
+                        
+                        # if the alert is already in the journey
+                        if alert in journey.alerts:
+                            # skip the journey
+                            continue
                         # if informed entity stop is not null and the stop id is in not in the journey stop id
                         if informed_entity.get('stop') != '' and informed_entity['stop'] not in journey.get_stop_ids():
                             # skip the journey
@@ -302,28 +276,42 @@ class MBTAJourneys:
                         if informed_entity['stop'] == journey.journey_stops[0].stop.id and not any(activity in informed_entity.get('activities', []) for activity in ['BOARD', 'RIDE']):
                             # Skip the journey
                             continue
-
                         # If the informed entity stop is an arrival and the informed entity activities don't include EXIT or RIDE
                         if informed_entity['stop'] == journey.journey_stops[1].stop.id and not any(activity in informed_entity.get('activities', []) for activity in ['EXIT', 'RIDE']):
                             # Skip the journey
                             continue
-                        #if the alert has not been already included
-                        if alert not in journey.alerts: 
-                            journey.alerts.append(alert)
-                        
+                        # add the alert to the journy
+                        journey.alerts.append(alert)
+
+    def _get_stop_ids_from_stops(self, stops: List[MBTAStop]) -> List[str]:
+        """Extract stop IDs from a list of MBTAstop objects."""
+        stop_ids = [stop.id for stop in stops]
+        return stop_ids
     
-    def get_all_stop_ids(self) -> List[str]:
+    def _get_stop_by_id(self, stops: List[MBTAStop], stop_id: str) -> Optional[MBTAStop]:
+        """Retrieve a stop from the list of MBTAstop objects based on the stop ID."""
+        for stop in stops:
+            if stop.id == stop_id:
+                return stop
+        return None
+                           
+    def _get_first_stop_departure_time(self, journey: MBTAJourney) -> datetime:
+        """Get the departure time of the first stop in a journey."""
+        departure_stop = journey.journey_stops[0]
+        return departure_stop.get_time()
+    
+    def _get_all_stop_ids(self) -> List[str]:
         """Retrieve a list of all unique stop IDs from the journeys."""
         stop_ids = set()
         for journey in self.journeys.values():
             stop_ids.update(journey.get_stop_ids())
         return sorted(list(stop_ids))
 
-    def get_all_trip_ids(self) -> List[str]:
+    def _get_all_trip_ids(self) -> List[str]:
         """Retrieve a list of all trip IDs from the journeys."""
         return list(self.journeys.keys())
 
-    def get_all_route_ids(self) -> List[str]:
+    def _get_all_route_ids(self) -> List[str]:
         """Retrieve a list of all unique route IDs from the journeys."""
         route_ids = set()
         for journey in self.journeys.values():
@@ -352,9 +340,15 @@ class MBTAJourneys:
     def get_route_description(self, journey: MBTAJourney) -> Optional[str]:
         """Get the description of the route for a given journey."""
         if journey.route:
-            return journey.route.description
+            return MBTARoute.get_route_type_desc_by_type_id(journey.route.type)
         return None
 
+    def get_route_type(self, journey: MBTAJourney) -> Optional[str]:
+        """Get the description of the route for a given journey."""
+        if journey.route:
+            return journey.route.type
+        return None
+    
     def get_trip_headsign(self, journey: MBTAJourney) -> Optional[str]:
         """Get the headsign of the trip for a given journey."""
         if journey.trip:

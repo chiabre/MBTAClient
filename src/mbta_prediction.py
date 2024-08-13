@@ -38,11 +38,3 @@ class MBTAPrediction:
     @staticmethod
     def get_uncertainty_description(key: str) -> str:
         return MBTAPrediction.UNCERTAINTY.get(key, 'None')
-
-    def __eq__(self, other: Any) -> bool:
-        if isinstance(other, MBTAPrediction):
-            return self.id == other.id
-        return False
-
-    def __hash__(self) -> int:
-        return hash(self.id)

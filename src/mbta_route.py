@@ -5,8 +5,10 @@ class MBTARoute:
     """A route object to hold information about a route."""
 
     ROUTE_TYPES= {
-        0: 'Light Rail',   # Example: Green Line
-        1: 'Heavy Rail',   # Example: Red Line
+        # 0: 'Light Rail',   # Example: Green Line
+        # 1: 'Heavy Rail',   # Example: Red Line
+        0: 'Subway',   
+        1: 'Subway',  
         2: 'Commuter Rail',
         3: 'Bus',
         4: 'Ferry'
@@ -30,4 +32,7 @@ class MBTARoute:
     def __repr__(self) -> str:
         return (f"MBTAroute(id={self.id}, short_name={self.short_name})")
 
-
+    @staticmethod
+    def get_route_type_desc_by_type_id(route_type: int) -> str:
+        """Get a description of the route type."""
+        return MBTARoute.ROUTE_TYPES.get(route_type, 'Unknown')

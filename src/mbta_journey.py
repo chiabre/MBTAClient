@@ -117,7 +117,6 @@ class MBTAJourneyStop:
     def get_uncertainty(self) -> Optional[str]:
         """Return the most relevant time to for the stop."""
         return self.arrival_uncertainty or self.departure_uncertainty
-    
 
     @staticmethod
     def __time_to(time: Optional[datetime], now: datetime) -> Optional[float]:
