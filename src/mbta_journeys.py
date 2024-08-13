@@ -1,8 +1,8 @@
 import logging
 import traceback
-from typing import Any, Dict, Optional, List, Union
+from typing import Any, Dict, Optional, List
 from datetime import datetime
-from mbta import MBTA
+from mbta_client import MBTAClient
 from mbta_stop import MBTAStop
 from mbta_route import MBTARoute
 from mbta_trip import MBTATrip
@@ -14,23 +14,25 @@ from mbta_journey import MBTAJourney, MBTAJourneyStop
 class MBTAJourneys:
     """A class to manage a journey on a route from/to stops."""
 
-    def __init__(self, mbta_client: MBTA, journeys_count: int, depart_from_stops: List[MBTAStop], arrive_at_stops: List[MBTAStop], route_id: str = None) -> None:
+    def __init__(self, mbta_client: MBTAClient, max_journeys: int, depart_from_stops: List[MBTAStop], arrive_at_stops: List[MBTAStop], route: MBTARoute = None) -> None:
         self.mbta_client = mbta_client
-        self.journeys_count = journeys_count
+        self.max_journeys = max_journeys
         self.depart_from_stops = depart_from_stops
         self.arrive_at_stops = arrive_at_stops
-        self.route_id = route_id
+        self.route = route
         self.journeys: Dict[str, MBTAJourney] = {} 
         
     async def populate(self):
         """Populate the journeys with schedules, predictions, trips, routes, and alerts."""
         try:
+            logging.debug("Starting to populate journeys...")
             await self._schedules()
             await self._predictions()
             self._finalize_journeys()
             await self._trips()
             await self._routes()
             await self._alerts()
+            logging.debug("Finished populating journeys.")
         except Exception as e:
             logging.error(f"Error populating journeys: {e}")
             traceback.print_exc()  # This will print the full traceback to the console
@@ -40,33 +42,46 @@ class MBTAJourneys:
         """Retrieve and process schedules based on the provided stop IDs and route ID."""
         now = datetime.now()
         params = {
-            'filter[stop]': ','.join(self._get_stop_ids_from_stops(self.depart_from_stops) + self._get_stop_ids_from_stops(self.arrive_at_stops)),
+            'filter[stop]': ','.join(self._get_stop_ids_from_stops(self.depart_from_stops + self.arrive_at_stops)),
             'filter[min_time]': now.strftime('%H:%M'),
             'filter[date]': now.strftime('%Y-%m-%d'),
             'sort': 'departure_time'
         }
-        if self.route_id:  
-            params['filter[route]'] = self.route_id
+        if self.route:  
+            params['filter[route]'] = self.route.id
         
         schedules: List[MBTASchedule] = await self.mbta_client.list_schedules(params)
         
         for schedule in schedules:
+            # if the schedule trip id not in the journeys
             if schedule.trip_id not in self.journeys:
+                # journey stops are ordered by departure time
+                # if the first schedule stop is not in the depart stops ( = it's an arrival)
                 if schedule.stop_id not in self._get_stop_ids_from_stops(self.depart_from_stops):
+                    # skip the schedule
                     continue
+                # create the journey
                 journey = MBTAJourney()
+                # add the journey to the journeys Dict using the trip_id as key
                 self.journeys[schedule.trip_id] = journey
-                
+            
+            # create the stop    
             journey_stop = MBTAJourneyStop(
                 stop = self._get_stop_by_id((self.depart_from_stops + self.arrive_at_stops), schedule.stop_id),
                 arrival_time=schedule.arrival_time,
                 departure_time=schedule.departure_time,
                 stop_sequence=schedule.stop_sequence
             )
+            # add the stop to the journey 
             self.journeys[schedule.trip_id].add_stop(journey_stop)
             
+            # get the journey stops
             stops = self.journeys[schedule.trip_id].journey_stops
-            if len(stops) == 2 and (stops[0].stop.stop_id not in self._get_stop_ids_from_stops(self.depart_from_stops) or stops[1].stop.stop_id  not in self._get_stop_ids_from_stops(self.arrive_at_stops)):
+            # if there are 2 stops and 
+            # the departure stop (stops[0]) id is not in the departure stop ids OR the arrival stop (stops[1]) id is not in the arrival stop ids
+            # ( = the trip is in the wrong direction)
+            if len(stops) == 2 and (stops[0].stop.id not in self._get_stop_ids_from_stops(self.depart_from_stops) or stops[1].stop.id  not in self._get_stop_ids_from_stops(self.arrive_at_stops)):
+                # delete the yourney from the journeys Dict
                 del self.journeys[schedule.trip_id]
                 
     def _get_stop_ids_from_stops(self, stops: List[MBTAStop]) -> List[str]:
@@ -76,7 +91,7 @@ class MBTAJourneys:
         :param stops: List of MBTAstop objects
         :return: List of stop IDs
         """
-        stop_ids = [stop.stop_id for stop in stops]
+        stop_ids = [stop.id for stop in stops]
         return stop_ids
     
     def _get_stop_by_id(self, stops: List[MBTAStop], stop_id: str) -> Optional[MBTAStop]:
@@ -88,7 +103,7 @@ class MBTAJourneys:
         :return: The MBTAstop object with the matching stop ID, or None if not found
         """
         for stop in stops:
-            if stop.stop_id == stop_id:
+            if stop.id == stop_id:
                 return stop
         return None
                 
@@ -106,31 +121,43 @@ class MBTAJourneys:
             'filter[stop]': ','.join(journey_stops_ids),
             'sort': 'departure_time'
         }
-        if self.route_id:  
-            params['filter[route]'] = self.route_id
+        if self.route:  
+            params['filter[route]'] = self.route.id
         
         predictions: List[MBTAPrediction] = await self.mbta_client.list_predictions(params)
         
         for prediction in predictions:
-            if prediction.schedule_relationship in ['CANCELLED', 'SKIPPED']:
+            
+            is_cancelled_trip = prediction.schedule_relationship in ['CANCELLED', 'SKIPPED']
+            is_past_trip = prediction.arrival_time and datetime.fromisoformat(prediction.arrival_time) < now
+            is_departure_stop = prediction.stop_id in depart_stop_ids
+            is_arrival_stop = prediction.stop_id in arrival_stop_ids
+
+            # If the trip of the prediction is cancelled/skipped
+            if is_cancelled_trip:
+                # remove the journey on the same trip_id from the journeys Dict
                 self.journeys.pop(prediction.trip_id, None)
                 continue
             
-            # Skip if the prediciton is in the past
-            if prediction.arrival_time:
-                if datetime.fromisoformat( prediction.arrival_time) < now:
-                    continue
+            # If the trip of the prediction is in the past remove it
+            if is_past_trip:
+                # remove the journey on the same trip_id from the journeys Dict
+                self.journeys.pop(prediction.trip_id, None)
+                continue
             
-            # if the prediciton trip is not in the journeys
+            # if the trip of the prediciton is not in the journeys Dict
             if prediction.trip_id not in self.journeys:
-                # Skip if the first stop is not a departure stop
-                if prediction.stop_id not in depart_stop_ids:
+                # if the first stop is not a departure stop
+                if is_departure_stop:
+                    # skipp the prediction
                     continue
                 
-                # Create the journey and stop
+                # create the journey
                 journey = MBTAJourney()
+                # add the journey to the journeys Dict using the trip_id as key
                 self.journeys[prediction.trip_id] = journey
                 
+                # add (smart update) the stop to the journey in position 0 (departure)
                 journey.update_journey_stop(
                     0,
                     stop=self._get_stop_by_id(journey_stops, prediction.stop_id),
@@ -140,7 +167,6 @@ class MBTAJourneys:
                     arrival_uncertainty=prediction.arrival_uncertainty,
                     departure_uncertainty=prediction.departure_uncertainty
                 )
-                
             
             # if the prediciton trip is in the journeys
             else:
@@ -148,8 +174,9 @@ class MBTAJourneys:
                 journey: MBTAJourney = self.journeys[prediction.trip_id]
                 
                 # if the prediction stop id is in the departure stop ids
-                if prediction.stop_id in depart_stop_ids:
+                if is_departure_stop:
             
+                    # add (smart update) the stop to the journey in position 0 (departure)
                     journey.update_journey_stop(
                         0,
                         stop=self._get_stop_by_id(journey_stops, prediction.stop_id),
@@ -160,9 +187,10 @@ class MBTAJourneys:
                         departure_uncertainty=prediction.departure_uncertainty
                     )
                             
-                # if the prediction stop id is in the arrival stop ids a
-                elif prediction.stop_id in arrival_stop_ids:
-                    
+                # if the prediction stop id is in the arrival stop ids 
+                elif is_arrival_stop:
+
+                    # add (smart update) the stop to the journey in position 1 (arrival)                    
                     journey.update_journey_stop(
                         1,
                         stop=self._get_stop_by_id(journey_stops, prediction.stop_id),
@@ -193,14 +221,14 @@ class MBTAJourneys:
             )
         )
         
-        # Limit the number of journeys to `self.journeys_count`
-        self.journeys = dict(list(sorted_journeys.items())[:self.journeys_count])
+        # Limit the number of journeys to `self.max_journeys`
+        self.journeys = dict(list(sorted_journeys.items())[:self.max_journeys])
 
 
     def _get_first_stop_departure_time(self, journey: MBTAJourney) -> datetime:
         """Get the departure time of the first stop in a journey."""
-        first_stop = journey.journey_stops[0]
-        return first_stop.get_time()
+        departure_stop = journey.journey_stops[0]
+        return departure_stop.get_time()
 
     async def _trips(self):
         """Retrieve trip details for each journey."""
@@ -213,23 +241,26 @@ class MBTAJourneys:
             
     async def _routes(self):
         """Retrieve route details for each journey."""
-        route_ids = []
-        routes = []
-        if self.route_id is not None:
-            route_ids.append(self.route_id)
+
+        routes: List[MBTARoute] = []
         
-        for journey in self.journeys.values():
-            if journey.trip and journey.trip.route_id and journey.trip.route_id not in route_ids:
-                route_ids.append(journey.trip.route_id)
+        if self.route is not None:
+            routes.append(self.route)
+        else:
+            route_ids: List[str] = []
+            for journey in self.journeys.values():
+                if journey.trip and journey.trip.route_id and journey.trip.route_id not in route_ids:
+                    route_ids.append(journey.trip.route_id)
+                    
+            # Fetch route details
+            for route_id in route_ids:
+                try:
+                    route: MBTARoute = await self.mbta_client.get_route(route_id)
+                    routes.append(route)
+                except Exception as e:
+                    logging.error(f"Error retrieving route {route_id}: {e}")
         
-        for route_id in route_ids:
-            try:
-                route: MBTARoute = await self.mbta_client.get_route(route_id)
-                routes.append(route)
-            except Exception as e:
-                logging.error(f"Error retrieving route {route_id}: {e}")
-        
-        route_dict = {route.route_id: route for route in routes}
+        route_dict = {route.id: route for route in routes}
         
         for journey in self.journeys.values():
             if journey.trip and journey.trip.route_id in route_dict:
@@ -246,33 +277,39 @@ class MBTAJourneys:
         
         alerts: List[MBTAAlert] = await self.mbta_client.list_alerts(params)
         
+        now = datetime.now().astimezone()
+               
         for alert in alerts:
-            for informed_entity in alert.informed_entities:
-                for journey in self.journeys.values():
+            
+            if datetime.fromisoformat(alert.active_period_start) > now and datetime.fromisoformat(alert.active_period_end) < now:
+            
+                for informed_entity in alert.informed_entities:
+                    for journey in self.journeys.values():
 
-                    # if informed entity stop is not null and the stop id is in not in the journey stop id
-                    if informed_entity.get('stop') != '' and informed_entity['stop'] not in journey.get_stop_ids():
-                        # skip the journey
-                        continue
-                    # if informed entity trip is not null and the trip id is not in the journey trip id
-                    if informed_entity.get('trip')  != '' and informed_entity['trip'] != journey.trip.trip_id:
-                        # skip the journey
-                        continue
-                    # if informed entity route is not null and the route id is not in the journey route id
-                    if informed_entity.get('route') != '' and informed_entity['route'] != journey.route.route_id:
-                        # skip the journey
-                        continue
-                    # if the informed entity stop is a departure and the informed enity activities doesn't inlude BOARD    
-                    if informed_entity['stop'] == journey.journey_stops[0].stop.stop_id  and 'BOARD' not in informed_entity.get('activities'):
-                        # skip the journey
-                        continue
-                    # if the informed entity stop is an arrival and the informed enity activities doesn't inlude EXIT    
-                    if informed_entity['stop'] == journey.journey_stops[1].stop.stop_id  and 'EXIT' not in informed_entity.get('activities'):
-                        # skip the journey
-                        continue
-                    #if the alert has not been already included
-                    if alert not in journey.alerts: 
-                        journey.alerts.append(alert)
+                        # if informed entity stop is not null and the stop id is in not in the journey stop id
+                        if informed_entity.get('stop') != '' and informed_entity['stop'] not in journey.get_stop_ids():
+                            # skip the journey
+                            continue
+                        # if informed entity trip is not null and the trip id is not in the journey trip id
+                        if informed_entity.get('trip')  != '' and informed_entity['trip'] != journey.trip.id:
+                            # skip the journey
+                            continue
+                        # if informed entity route is not null and the route id is not in the journey route id
+                        if informed_entity.get('route') != '' and informed_entity['route'] != journey.route.id:
+                            # skip the journey
+                            continue
+                        # If the informed entity stop is a departure and the informed entity activities don't include BOARD or RIDE
+                        if informed_entity['stop'] == journey.journey_stops[0].stop.id and not any(activity in informed_entity.get('activities', []) for activity in ['BOARD', 'RIDE']):
+                            # Skip the journey
+                            continue
+
+                        # If the informed entity stop is an arrival and the informed entity activities don't include EXIT or RIDE
+                        if informed_entity['stop'] == journey.journey_stops[1].stop.id and not any(activity in informed_entity.get('activities', []) for activity in ['EXIT', 'RIDE']):
+                            # Skip the journey
+                            continue
+                        #if the alert has not been already included
+                        if alert not in journey.alerts: 
+                            journey.alerts.append(alert)
                         
     
     def get_all_stop_ids(self) -> List[str]:
@@ -343,11 +380,11 @@ class MBTAJourneys:
 
     def get_stop_name(self, journey: MBTAJourney, stop_index: int) -> Optional[str]:
         journey_stop = journey.journey_stops[stop_index]
-        return journey_stop.stop.stop_name
+        return journey_stop.stop.name
 
     def get_platform_name(self, journey: MBTAJourney, stop_index: int) -> Optional[str]:
         journey_stop = journey.journey_stops[stop_index]
-        return journey_stop.stop.stop_platform_name
+        return journey_stop.stop.platform_name
 
     def get_stop_time(self, journey: MBTAJourney, stop_index: int) -> Optional[datetime]:
         journey_stop = journey.journey_stops[stop_index]

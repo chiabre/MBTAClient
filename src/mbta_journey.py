@@ -28,12 +28,12 @@ class MBTAJourney:
     
     def get_stop_ids(self) -> List[str]:
         """Return a list of stop IDs for all stops in the journey."""
-        return [journey_stop.stop.stop_id for journey_stop in self.journey_stops]
+        return [journey_stop.stop.id for journey_stop in self.journey_stops]
     
     def find_jounrey_stop_by_id(self, stop_id: str) -> Optional['MBTAJourneyStop']:
         """Return the MBTAjourneyStop with the given stop_id, or None if not found."""
         for journey_stop in self.journey_stops:
-            if journey_stop.stop.stop_id == stop_id:
+            if journey_stop.stop.id == stop_id:
                 return journey_stop
         return None
     
@@ -67,12 +67,7 @@ class MBTAJourneyStop:
         self.stop_sequence = stop_sequence
 
     def __repr__(self) -> str:
-        return (f"MBTAjourneyStop(stop={self.stop}, arrival_time={self.arrival_time}, real_arrival_time={self.real_arrival_time}, "
-                f"arrival_uncertainty={self.arrival_uncertainty}, departure_time={self.departure_time}, "
-                f"real_departure_time={self.real_departure_time}, departure_uncertainty={self.departure_uncertainty}, "
-                f"stop_sequence={self.stop_sequence}, arrival_delay={self.arrival_delay}, "
-                f"departure_delay={self.departure_delay}, time_to_departure={self.time_to_departure}, "
-                f"time_to_arrival={self.time_to_arrival})")
+        return (f"MBTAjourneyStop(stop={repr(self.stop)}")
 
     def update_stop(self, stop: MBTAStop, arrival_time: str, departure_time: str, stop_sequence: int = None, arrival_uncertainty: Optional[str] = None,   departure_uncertainty: Optional[str] = None) -> None:
         """Update the stop details, including real arrival and departure times, uncertainties, and delays."""

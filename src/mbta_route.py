@@ -15,7 +15,7 @@ class MBTARoute:
     def __init__(self, route: Dict[str, Any]) -> None:
         attributes = route.get('attributes', {})
 
-        self.route_id: str = route.get('id', '')
+        self.id: str = route.get('id', '')
         self.color: str = attributes.get('color', '')
         self.description: str = attributes.get('description', '')
         self.direction_destinations: List[str] = attributes.get('direction_destinations', [])
@@ -28,11 +28,6 @@ class MBTARoute:
         self.type: str = attributes.get('type', '')
 
     def __repr__(self) -> str:
-        return (f"MBTAroute(id={self.route_id}, color={self.route_color}, description={self.route_description}, "
-                f"direction_destinations={self.route_direction_destinations}, direction_names={self.route_direction_names}, "
-                f"fare_class={self.route_fare_class}, long_name={self.route_long_name}, short_name={self.route_short_name}, "
-                f"sort_order={self.route_sort_order}, text_color={self.route_text_color}, type={self.route_type})")
+        return (f"MBTAroute(id={self.id}, short_name={self.short_name})")
 
-    def __str__(self) -> str:
-        return f"Route {self.route_short_name or self.route_id}: {self.route_long_name}"
 

@@ -8,7 +8,7 @@ class MBTASchedule:
     def __init__(self, schedule: Dict[str, Any]) -> None:
         attributes = schedule.get('attributes', {})
 
-        self.schedule_id: str = schedule.get('id', '')
+        self.id: str = schedule.get('id', '')
         self.arrival_time: str = attributes.get('arrival_time', '')
         self.departure_time: str = attributes.get('departure_time', '')
         self.direction_id: int = attributes.get('direction_id', 0)
@@ -24,18 +24,5 @@ class MBTASchedule:
         self.trip_id: str = relationships.get('trip', {}).get('data', {}).get('id', '')
 
     def __repr__(self) -> str:
-        return (f"MBTAschedule(id={self.schedule_id}, arrival_time={self.arrival_time}, departure_time={self.departure_time}, "
-                f"direction_id={self.direction_id}, drop_off_type={self.drop_off_type}, pickup_type={self.pickup_type}, "
-                f"stop_headsign={self.stop_headsign}, stop_sequence={self.stop_sequence}, timepoint={self.timepoint}, "
-                f"route_id={self.route_id}, stop_id={self.stop_id}, trip_id={self.trip_id})")
+        return (f"MBTAschedule(id={self.id}, route_id={self.route_id}, stop_id={self.stop_id}, trip_id={self.trip_id})")
 
-    def __str__(self) -> str:
-        return f"Schedule for trip {self.trip_id} at stop {self.stop_id}"
-
-    def __eq__(self, other: Any) -> bool:
-        if isinstance(other, MBTASchedule):
-            return self.schedule_id == other.schedule_id
-        return False
-
-    def __hash__(self) -> int:
-        return hash(self.schedule_id)

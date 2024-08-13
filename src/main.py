@@ -1,11 +1,10 @@
 import aiohttp
 
-from mbta import MBTA
-from mbta_auth import MBTAAuth
+from mbta_client import MBTAClient
 from mbta_stop import MBTAStop
 from mbta_route import MBTARoute
 from mbta_journeys import MBTAJourneys
-from mbta_schedule import MBTASchedule
+
 
 from datetime import datetime
 from typing import Dict, List, Any
@@ -20,14 +19,18 @@ API_KEY = None
 # DEPART_FROM = 'Wellesley Square'
 # ARRIVE_AT = 'South Station'
 
+# ROUTE = 'Red'
+# DEPART_FROM = 'South Station'
+# ARRIVE_AT = 'Alewife'
+
 # ROUTE = None
 # DEPART_FROM = 'North Station'
 # ARRIVE_AT = 'Swampscott'
 
 # ROUTE = None
-# ROUTE = 'Wakefield Avenue & Truman Parkway - Ashmont Station'
-# DEPART_FROM = 'Dorchester Ave @ Valley Rd'
-# ARRIVE_AT = 'River St @ Standard St'
+ROUTE = 'Wakefield Avenue & Truman Parkway - Ashmont Station'
+DEPART_FROM = 'Dorchester Ave @ Valley Rd'
+ARRIVE_AT = 'River St @ Standard St'
 
 # DEPART_FROM = 'Back Bay'
 # ARRIVE_AT = 'Huntington Ave @ Opera Pl'
@@ -38,27 +41,29 @@ API_KEY = None
 # ROUTE = 'Charlestown Ferry'
 
 # ROUTE = None
-# DEPART_FROM = 'Arlington'
-# ARRIVE_AT = 'Copley'
+# DEPART_FROM = 'North Billerica'
+# ARRIVE_AT = 'North Station'
 
-ROUTE = None
-DEPART_FROM = 'Back Bay'
-ARRIVE_AT = 'South Station'
+# ROUTE = None
+# DEPART_FROM = 'Back Bay'
+# ARRIVE_AT = 'South Station'
+
+# ROUTE = None
+# DEPART_FROM = 'Pemberton Point'
+# ARRIVE_AT = 'Summer St from Cushing Way to Water St (FLAG)'
 
 async def main():
     async with aiohttp.ClientSession() as session:
         
         if API_KEY:
-            auth = MBTAAuth(session, api_key=API_KEY)
+            mbta_client = MBTAClient(session, API_KEY)
         else:
-            auth = MBTAAuth(session)
+            mbta_client = MBTAClient(session)
             
-        mbta_client = MBTA(auth)
 
         params = {
             'filter[location_type]' :'0'
         }
-
         
         stops = await mbta_client.list_stops(params)
         
@@ -68,18 +73,21 @@ async def main():
         
         del stops
         
-        if ROUTE :
+        if ROUTE:
             routes = await mbta_client.list_routes()
-            # Find the route_id matching the given ROUTE name
-            route_id = None
+            journey_route = None
+
             for route in routes:
                 if route.long_name == ROUTE:
-                    route_id = route.route_id
-                    
-            journeys = MBTAJourneys(mbta_client, 5, depart_from_stops, arrive_at_stops, route_id)        
+                    journey_route: MBTARoute = route
+                    break  # Found the route, no need to continue the loop
 
+            if journey_route:
+                journeys = MBTAJourneys(mbta_client, 5, depart_from_stops, arrive_at_stops, journey_route)
+            else:
+                journeys = MBTAJourneys(mbta_client, 5, depart_from_stops, arrive_at_stops)
         else:
-            journeys = MBTAJourneys(mbta_client, 5, depart_from_stops, arrive_at_stops) 
+            journeys = MBTAJourneys(mbta_client, 5, depart_from_stops, arrive_at_stops)
         
         await journeys.populate()
         
