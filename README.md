@@ -4,9 +4,15 @@
 
 ## Features
 
-- Provide simplified access to MBTA routes, stops, trips, schedules, predictions, and alerts data
-- Organize the above information into journeys, collections of trips from stop A to stop B
-- Easily integrate with Home Assistant or other Python-based systems
+- structured objects to manage information about:
+    - MBTA Routes
+    - MBTA Stops
+    - MBTA Trips
+    - MBTA Schedules
+    - MBTA Predictions
+    - MBTA Alerts
+- Includes a "Journey Manager" to identify and collect journeys from Stop A to Stop B, offering real-time updates on scheduling, delays, and alerts.
+- Easily integrates with Home Assistant or other Python-based systems.
 
 ## Contributing
 

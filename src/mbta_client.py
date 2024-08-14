@@ -1,9 +1,11 @@
 import aiohttp
+from aiohttp import ClientConnectionError, ClientResponseError
+
 import logging
 
 from typing import List, Optional, Dict, Any
 
-from mbta_auth import MBTAAuth
+
 from mbta_route import MBTARoute
 from mbta_stop import MBTAStop
 from mbta_schedule import MBTASchedule
@@ -26,12 +28,9 @@ class MBTAClient:
     """Class to interact with the MBTA v3 API."""
 
     def __init__(self, session: aiohttp.ClientSession, api_key: Optional[str] = None) -> None:
-        """Initialize the MBTA client with authentication and optional route details."""
-        if api_key:
-            self.auth = MBTAAuth(session, MBTA_DEFAULT_HOST, api_key)
-        else:
-            self.auth = MBTAAuth(session, MBTA_DEFAULT_HOST)
-  
+        self._session = session
+        self._api_key = api_key
+
     
     async def get_route(self, id: str, params: Optional[Dict[str, Any]] = None) -> MBTARoute:
         """Get a route by its ID."""
@@ -74,15 +73,46 @@ class MBTAClient:
         return [MBTAAlert(item) for item in alert_data['data']]
     
     async def _fetch_data(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Helper method to fetch data from API."""
-        response = await self.auth.request("get", endpoint, params)
+        """Helper method to fetch data from the MBTA API."""
         try:
-            data = await response.json()
+            response = await self.request("get", endpoint, params)
+            data = await response.json() 
             if 'data' not in data:
                 raise ValueError("Unexpected response format")
             return data
-        except ValueError as error:
-            logging.error(f"Error processing JSON response: {error}")
+        except Exception as error:
+            logging.error(f"Error fetching data: {error}")
             raise
+        
+    async def request(
+        self, method: str, path: str, params: Optional[Dict[str, Any]] = None) -> aiohttp.ClientResponse:
+        """Make an HTTP request with optional query parameters and JSON body."""
+        
+        if params is None:
+            params = {}
+        if self._api_key:
+            params['api_key'] = self._api_key
+        
+        try:
+            response: aiohttp.ClientResponse = await self._session.request(
+                method,
+                f'https://{MBTA_DEFAULT_HOST}/{path}',
+                params=params
+            )
+                    
+            response.raise_for_status()
+            
+            return response
+            
+        except ClientConnectionError as error:
+            logging.error(f"Connection error: {error}")
+            raise
+        except ClientResponseError as error:
+            logging.error(f"Client response error: {error.status} - {str(error)}")
+            raise
+        except Exception as error:
+            logging.error(f"An unexpected error occurred: {error}")
+            raise        
+
 
 

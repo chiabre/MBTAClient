@@ -9,9 +9,9 @@ from mbta_trip import MBTATrip
 from mbta_alert import MBTAAlert
 from mbta_schedule import MBTASchedule
 from mbta_prediction import MBTAPrediction
-from mbta_journey import MBTAJourney, MBTAJourneyStop
+from journey import Journey, JourneyStop
 
-class MBTAJourneys:
+class JourneyManager:
     """A class to manage a journey on a route from/to stops."""
 
     def __init__(self, mbta_client: MBTAClient, max_journeys: int, depart_from_stops: List[MBTAStop], arrive_at_stops: List[MBTAStop], route: MBTARoute = None) -> None:
@@ -20,7 +20,7 @@ class MBTAJourneys:
         self.depart_from_stops = depart_from_stops
         self.arrive_at_stops = arrive_at_stops
         self.route = route
-        self.journeys: Dict[str, MBTAJourney] = {} 
+        self.journeys: Dict[str, Journey] = {} 
         
     async def populate(self):
         """Populate the journeys with schedules, predictions, trips, routes, and alerts."""
@@ -28,7 +28,7 @@ class MBTAJourneys:
             logging.debug("Starting to populate journeys...")
             await self.__schedules()
             await self.__predictions()
-            self.__finalize_journeys()
+            self.__sort_and_clean_journeys()
             await self.__trips()
             await self.__routes()
             await self.__alerts()
@@ -61,12 +61,12 @@ class MBTAJourneys:
                     # skip the schedule
                     continue
                 # create the journey
-                journey = MBTAJourney()
+                journey = Journey()
                 # add the journey to the journeys Dict using the trip_id as key
                 self.journeys[schedule.trip_id] = journey
             
             # create the stop    
-            journey_stop = MBTAJourneyStop(
+            journey_stop = JourneyStop(
                 stop = self._get_stop_by_id((self.depart_from_stops + self.arrive_at_stops), schedule.stop_id),
                 arrival_time=schedule.arrival_time,
                 departure_time=schedule.departure_time,
@@ -130,7 +130,7 @@ class MBTAJourneys:
                     continue
                 
                 # create the journey
-                journey = MBTAJourney()
+                journey = Journey()
                 # add the journey to the journeys Dict using the trip_id as key
                 self.journeys[prediction.trip_id] = journey
                 
@@ -148,7 +148,7 @@ class MBTAJourneys:
             # if the prediciton trip is in the journeys
             else:
                 # get the journey
-                journey: MBTAJourney = self.journeys[prediction.trip_id]
+                journey: Journey = self.journeys[prediction.trip_id]
                 
                 # if the prediction stop id is in the departure stop ids
                 if is_departure_stop:
@@ -178,7 +178,7 @@ class MBTAJourneys:
                         departure_uncertainty=prediction.departure_uncertainty
                     )
                          
-    def __finalize_journeys(self):
+    def __sort_and_clean_journeys(self):
         """Clean up and sort valid journeys."""
         processed_journeys = {}
         
@@ -251,15 +251,18 @@ class MBTAJourneys:
                
         for alert in alerts:
             
-            if datetime.fromisoformat(alert.active_period_start) > now and datetime.fromisoformat(alert.active_period_end) < now:
+            if datetime.fromisoformat(alert.active_period_start) < now and datetime.fromisoformat(alert.active_period_end) > now:
             
-                for informed_entity in alert.informed_entities:
-                    for journey in self.journeys.values():
-                        
-                        # if the alert is already in the journey
-                        if alert in journey.alerts:
-                            # skip the journey
-                            continue
+
+                for journey in self.journeys.values():
+                    
+                    # if the alert is already in the journey
+                    if alert in journey.alerts:
+                        # skip the journey
+                        continue
+                    
+                    for informed_entity in alert.informed_entities:
+                                        
                         # if informed entity stop is not null and the stop id is in not in the journey stop id
                         if informed_entity.get('stop') != '' and informed_entity['stop'] not in journey.get_stop_ids():
                             # skip the journey
@@ -295,7 +298,7 @@ class MBTAJourneys:
                 return stop
         return None
                            
-    def _get_first_stop_departure_time(self, journey: MBTAJourney) -> datetime:
+    def _get_first_stop_departure_time(self, journey: Journey) -> datetime:
         """Get the departure time of the first stop in a journey."""
         departure_stop = journey.journey_stops[0]
         return departure_stop.get_time()
@@ -319,84 +322,5 @@ class MBTAJourneys:
                 route_ids.add(journey.trip.route_id)
         return sorted(list(route_ids))
     
-    def get_route_short_name(self, journey: MBTAJourney) -> Optional[str]:
-        """Get the long name of the route for a given journey."""
-        if journey.route:
-            return journey.route.short_name
-        return None
-        
-    def get_route_long_name(self, journey: MBTAJourney) -> Optional[str]:
-        """Get the long name of the route for a given journey."""
-        if journey.route:
-            return journey.route.long_name
-        return None
-
-    def get_route_color(self, journey: MBTAJourney) -> Optional[str]:
-        """Get the color of the route for a given journey."""
-        if journey.route:
-            return journey.route.color
-        return None
-
-    def get_route_description(self, journey: MBTAJourney) -> Optional[str]:
-        """Get the description of the route for a given journey."""
-        if journey.route:
-            return MBTARoute.get_route_type_desc_by_type_id(journey.route.type)
-        return None
-
-    def get_route_type(self, journey: MBTAJourney) -> Optional[str]:
-        """Get the description of the route for a given journey."""
-        if journey.route:
-            return journey.route.type
-        return None
-    
-    def get_trip_headsign(self, journey: MBTAJourney) -> Optional[str]:
-        """Get the headsign of the trip for a given journey."""
-        if journey.trip:
-            return journey.trip.headsign
-        return None
-
-    def get_trip_name(self, journey: MBTAJourney) -> Optional[str]:
-        if journey.trip:
-            return journey.trip.name
-        return None
-
-    def get_trip_destination(self, journey: MBTAJourney) -> Optional[str]:
-        if journey.trip and journey.route:
-            trip_direction = journey.trip.direction_id
-            return journey.route.direction_destinations[trip_direction]
-        return None
-
-    def get_trip_direction(self, journey: MBTAJourney) -> Optional[str]:
-        if journey.trip and journey.route:
-            trip_direction = journey.trip.direction_id
-            return journey.route.direction_names[trip_direction]
-        return None
-
-    def get_stop_name(self, journey: MBTAJourney, stop_index: int) -> Optional[str]:
-        journey_stop = journey.journey_stops[stop_index]
-        return journey_stop.stop.name
-
-    def get_platform_name(self, journey: MBTAJourney, stop_index: int) -> Optional[str]:
-        journey_stop = journey.journey_stops[stop_index]
-        return journey_stop.stop.platform_name
-
-    def get_stop_time(self, journey: MBTAJourney, stop_index: int) -> Optional[datetime]:
-        journey_stop = journey.journey_stops[stop_index]
-        return journey_stop.get_time()
-
-    def get_stop_delay(self, journey: MBTAJourney, stop_index: int) -> Optional[float]:
-        journey_stop = journey.journey_stops[stop_index]
-        return journey_stop.get_delay()
-    
-    def get_stop_time_to(self, journey: MBTAJourney, stop_index: int) -> Optional[float]:
-        journey_stop = journey.journey_stops[stop_index]
-        return journey_stop.get_time_to()
-    
-    def get_stop_uncertainty(self, journey: MBTAJourney, stop_index: int) -> Optional[str]:
-        journey_stop = journey.journey_stops[stop_index]
-        return journey_stop.get_uncertainty()
-    
-    def get_alert_header(self, journey: MBTAJourney, alert_index: int) -> Optional[str]:
-        alert = journey.alerts[alert_index]
-        return alert.header_text
+ 
 

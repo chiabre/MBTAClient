@@ -3,10 +3,8 @@ import aiohttp
 from mbta_client import MBTAClient
 from mbta_stop import MBTAStop
 from mbta_route import MBTARoute
-from mbta_journeys import MBTAJourneys
+from journey_manager import JourneyManager
 
-
-from datetime import datetime
 from typing import Dict, List, Any
 
 API_KEY = None
@@ -16,17 +14,17 @@ MAX_JOURNEYS = 2
 # ARRIVE_AT = 'Wellesley Square'
 # DEPART_FROM = 'South Station'
 
-# ROUTE = 'Framingham/Worcester Line'
-# DEPART_FROM = 'Wellesley Square'
-# ARRIVE_AT = 'South Station'
+ROUTE = 'Framingham/Worcester Line'
+DEPART_FROM = 'Wellesley Square'
+ARRIVE_AT = 'South Station'
 
 # ROUTE = 'Red'
 # DEPART_FROM = 'South Station'
 # ARRIVE_AT = 'Alewife'
 
-ROUTE = None
-DEPART_FROM = 'Copley'
-ARRIVE_AT = 'Park Street'
+# ROUTE = None
+# DEPART_FROM = 'Copley'
+# ARRIVE_AT = 'Park Street'
 
 # ROUTE = None
 # DEPART_FROM = 'North Station'
@@ -71,124 +69,99 @@ async def main():
             'filter[location_type]' :'0'
         }
         
-        stops = await mbta_client.list_stops(params)
+        tmp_stops = await mbta_client.list_stops(params)
         
        
-        depart_from_stops = MBTAStop.get_stops_by_name(stops,DEPART_FROM )
-        arrive_at_stops = MBTAStop.get_stops_by_name(stops,ARRIVE_AT )
+        depart_from_stops = MBTAStop.get_stops_by_name(tmp_stops,DEPART_FROM )
+        arrive_at_stops = MBTAStop.get_stops_by_name(tmp_stops,ARRIVE_AT )
         
-        del stops
+        del tmp_stops
         
+        journey_route = None
         if ROUTE:
-            routes = await mbta_client.list_routes()
-            journey_route = None
-
-            for route in routes:
+            tmp_routes: List[MBTARoute] = await mbta_client.list_routes()
+            for route in tmp_routes:
                 if route.long_name == ROUTE:
                     journey_route: MBTARoute = route
                     break  # Found the route, no need to continue the loop
+            del tmp_routes
 
-            if journey_route:
-                journeys = MBTAJourneys(mbta_client, MAX_JOURNEYS, depart_from_stops, arrive_at_stops, journey_route)
-                del route
-            else:
-                journeys = MBTAJourneys(mbta_client, MAX_JOURNEYS, depart_from_stops, arrive_at_stops)
-        else:
-            journeys = MBTAJourneys(mbta_client, MAX_JOURNEYS, depart_from_stops, arrive_at_stops)
+        journey_manager = JourneyManager(mbta_client, MAX_JOURNEYS, depart_from_stops, arrive_at_stops, journey_route)
+  
+        await journey_manager.populate()
         
-        await journeys.populate()
-        
-        for journey in journeys.journeys.values():
+        for journey in journey_manager.journeys.values():
             
-                route_type = journeys.get_route_type(journey)
+                route_type = journey.get_route_type()
             
                 # if subway or ferry
                 if route_type == 0 or route_type == 1 or route_type == 4:
                     
                     print("###########")
-                    print("Line:", journeys.get_route_long_name(journey))  
-                    print("Type:", journeys.get_route_description(journey))        
-                    print("Color:", journeys.get_route_color(journey))
+                    print("Line:", journey.get_route_long_name())  
+                    print("Type:", journey.get_route_description())        
+                    print("Color:", journey.get_route_color())
                     print() 
-                    print("Direction:", journeys.get_trip_direction(journey)+" to "+journeys.get_trip_destination(journey))
-                    print("Destination:", journeys.get_trip_headsign(journey))
+                    print("Direction:", journey.get_trip_direction()+" to "+journey.get_trip_destination())
+                    print("Destination:", journey.get_trip_headsign())
                     print() 
                     for i in range(len(journey.journey_stops)):
-                        print("Station:", journeys.get_stop_name(journey, i))
-                        print("Platform:", journeys.get_platform_name(journey, i))
-                        print("Time:", journeys.get_stop_time(journey, i))
-                        print("Delay:", journeys.get_stop_delay(journey, i))
-                        print("Time To:", journeys.get_stop_time_to(journey, i))
+                        print("Station:", journey.get_stop_name(i))
+                        print("Platform:", journey.get_platform_name(i))
+                        print("Time:", journey.get_stop_time( i))
+                        print("Delay:", journey.get_stop_delay( i))
+                        print("Time To:", journey.get_stop_time_to(i))
                         print() 
                     for j in range(len(journey.alerts)):
-                        print("Alert:" , journeys.get_alert_header(journey, j))
+                        print("Alert:" , journey.get_alert_header(j))
                         print() 
                 
                 # if train
                 elif route_type == 2:    
                                                       
                     print("###########")
-                    print("Line:", journeys.get_route_long_name(journey))  
-                    print("Type:", journeys.get_route_description(journey))        
-                    print("Color:", journeys.get_route_color(journey))
+                    print("Line:", journey.get_route_long_name())  
+                    print("Type:", journey.get_route_description())        
+                    print("Color:", journey.get_route_color())
                     print() 
-                    print("Train Number:", journeys.get_trip_name(journey))
-                    print("Direction:", journeys.get_trip_direction(journey)+" to "+journeys.get_trip_destination(journey))
-                    print("Destination:", journeys.get_trip_headsign(journey))
+                    print("Train Number:", journey.get_trip_name())
+                    print("Direction:", journey.get_trip_direction()+" to "+journey.get_trip_destination())
+                    print("Destination:", journey.get_trip_headsign())
                     print() 
                     for i in range(len(journey.journey_stops)):
-                        print("Station:", journeys.get_stop_name(journey, i))
-                        print("Platform:", journeys.get_platform_name(journey, i))
-                        print("Time:", journeys.get_stop_time(journey, i))
-                        print("Delay:", journeys.get_stop_delay(journey, i))
-                        print("Time To:", journeys.get_stop_time_to(journey, i))
+                        print("Station:", journey.get_stop_name(i))
+                        print("Platform:", journey.get_platform_name(i))
+                        print("Time:", journey.get_stop_time(i))
+                        print("Delay:", journey.get_stop_delay(i))
+                        print("Time To:", journey.get_stop_time_to(i))
                         print() 
                         
                     for j in range(len(journey.alerts)):
-                        print("Alert:" , journeys.get_alert_header(journey, j))
+                        print("Alert:" , journey.get_alert_header(j))
                         print() 
                 
                 #if bus
                 elif route_type == 3:
 
                     print("###########")
-                    print("Line:", journeys.get_route_short_name(journey))  
-                    print("Type:", journeys.get_route_description(journey))        
-                    print("Color:", journeys.get_route_color(journey))
+                    print("Line:", journey.get_route_short_name())  
+                    print("Type:", journey.get_route_description())        
+                    print("Color:", journey.get_route_color())
                     print() 
-                    print("Direction:", journeys.get_trip_direction(journey)+" to "+journeys.get_trip_destination(journey))
-                    print("Destination:", journeys.get_trip_headsign(journey))
+                    print("Direction:", journey.get_trip_direction()+" to "+journey.get_trip_destination())
+                    print("Destination:", journey.get_trip_headsign())
                     print() 
                     for i in range(len(journey.journey_stops)):
-                        print("Stop:", journeys.get_stop_name(journey, i))
-                        print("Time:", journeys.get_stop_time(journey, i))
-                        print("Delay:", journeys.get_stop_delay(journey, i))
-                        print("Time To:", journeys.get_stop_time_to(journey, i))
+                        print("Stop:", journey.get_stop_name(i))
+                        print("Time:", journey.get_stop_time(i))
+                        print("Delay:", journey.get_stop_delay(i))
+                        print("Time To:", journey.get_stop_time_to(i))
                         print() 
                         
                     for j in range(len(journey.alerts)):
-                        print("Alert:" , journeys.get_alert_header(journey, j))
+                        print("Alert:" , journey.get_alert_header(j))
                         print() 
-                        
-                # elif journeys.get_route_type(journey) == 4:
-
-                #     print("###########")
-                #     print("Line:", journeys.get_route_long_name(journey))  
-                #     print("Type:", journeys.get_route_description(journey))        
-                #     print("Color:", journeys.get_route_color(journey))
-                #     print() 
-                #     print("Direction:", journeys.get_trip_direction(journey)+" to "+journeys.get_trip_destination(journey))
-                #     print("Destination:", journeys.get_trip_headsign(journey))
-                #     print() 
-                #     for i in range(len(journey.journey_stops)):
-                #         print("Stop:", journeys.get_stop_name(journey, i))
-                #         print("Time:", journeys.get_stop_time(journey, i))
-                #         print("Delay:", journeys.get_stop_delay(journey, i))
-                #         print("Time To:", journeys.get_stop_time_to(journey, i))
-                #         print() 
-                #     for j in range(len(journey.alerts)):
-                #         print("Alert:" , journeys.get_alert_header(journey, j))
-                #         print()                     
+                                    
                 else:
                     
                      print('ARGH!') 

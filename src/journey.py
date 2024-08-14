@@ -7,7 +7,7 @@ from mbta_alert import MBTAAlert
 from mbta_prediction import MBTAPrediction
 import logging
 
-class MBTAJourney:
+class Journey:
     """A class to manage a journey with multiple stops."""
 
     def __init__(self) -> None:
@@ -15,14 +15,14 @@ class MBTAJourney:
         self.route: Optional[MBTARoute] = None
         self.trip: Optional[MBTATrip] = None
         self.alerts: List[MBTAAlert] = []
-        self.journey_stops: List[MBTAJourneyStop] = []
+        self.journey_stops: List[JourneyStop] = []
         
 
     def __repr__(self) -> str:
         stops_repr = ', '.join([repr(stop) for stop in self.journey_stops])
         return f"MBTAjourney(route={self.route}, trip={self.trip}, stops=[{stops_repr}])"
     
-    def add_stop(self, stop: 'MBTAJourneyStop') -> None:
+    def add_stop(self, stop: 'JourneyStop') -> None:
         """Add a stop to the journey."""
         self.journey_stops.append(stop) 
     
@@ -30,7 +30,7 @@ class MBTAJourney:
         """Return a list of stop IDs for all stops in the journey."""
         return [journey_stop.stop.id for journey_stop in self.journey_stops]
     
-    def find_jounrey_stop_by_id(self, stop_id: str) -> Optional['MBTAJourneyStop']:
+    def find_jounrey_stop_by_id(self, stop_id: str) -> Optional['JourneyStop']:
         """Return the MBTAjourneyStop with the given stop_id, or None if not found."""
         for journey_stop in self.journey_stops:
             if journey_stop.stop.id == stop_id:
@@ -40,12 +40,89 @@ class MBTAJourney:
     def update_journey_stop(self, stop_index: int, stop: MBTAStop, arrival_time: str, departure_time: str, stop_sequence: int = None, arrival_uncertainty: Optional[str] = None,   departure_uncertainty: Optional[str] = None):
     
         if (stop_index == 0 and len(self.journey_stops ) == 0) or (stop_index == 1 and len(self.journey_stops ) == 1):
-            journey_stop = MBTAJourneyStop(stop, arrival_time, departure_time, stop_sequence, arrival_uncertainty, departure_uncertainty)
+            journey_stop = JourneyStop(stop, arrival_time, departure_time, stop_sequence, arrival_uncertainty, departure_uncertainty)
             self.journey_stops.append(journey_stop)
         else:
             self.journey_stops[stop_index].update_stop(stop, arrival_time, departure_time, stop_sequence, arrival_uncertainty, departure_uncertainty)
-            
-class MBTAJourneyStop:
+
+
+    def get_route_short_name(self) -> Optional[str]:
+        if self.route:
+            return self.route.short_name
+        return None
+        
+    def get_route_long_name(self) -> Optional[str]:
+        if self.route:
+            return self.route.long_name
+        return None
+
+    def get_route_color(self) -> Optional[str]:
+        if self.route:
+            return self.route.color
+        return None
+
+    def get_route_description(self) -> Optional[str]:
+        if self.route:
+            return MBTARoute.get_route_type_desc_by_type_id(self.route.type)
+        return None
+
+    def get_route_type(self) -> Optional[str]:
+        if self.route:
+            return self.route.type
+        return None
+    
+    def get_trip_headsign(self) -> Optional[str]:
+        if self.trip:
+            return self.trip.headsign
+        return None
+
+    def get_trip_name(self) -> Optional[str]:
+        if self.trip:
+            return self.trip.name
+        return None
+
+    def get_trip_destination(self) -> Optional[str]:
+        if self.trip and self.route:
+            trip_direction = self.trip.direction_id
+            return self.route.direction_destinations[trip_direction]
+        return None
+
+    def get_trip_direction(self) -> Optional[str]:
+        if self.trip and self.route:
+            trip_direction = self.trip.direction_id
+            return self.route.direction_names[trip_direction]
+        return None
+
+    def get_stop_name(self, stop_index: int) -> Optional[str]:
+        journey_stop = self.journey_stops[stop_index]
+        return journey_stop.stop.name
+
+    def get_platform_name(self, stop_index: int) -> Optional[str]:
+        journey_stop = self.journey_stops[stop_index]
+        return journey_stop.stop.platform_name
+
+    def get_stop_time(self, stop_index: int) -> Optional[datetime]:
+        journey_stop = self.journey_stops[stop_index]
+        return journey_stop.get_time()
+
+    def get_stop_delay(self, stop_index: int) -> Optional[float]:
+        journey_stop = self.journey_stops[stop_index]
+        return journey_stop.get_delay()
+    
+    def get_stop_time_to(self, stop_index: int) -> Optional[float]:
+        journey_stop = self.journey_stops[stop_index]
+        return journey_stop.get_time_to()
+    
+    def get_stop_uncertainty(self, stop_index: int) -> Optional[str]:
+        journey_stop = self.journey_stops[stop_index]
+        return journey_stop.get_uncertainty()
+    
+    def get_alert_header(self, alert_index: int) -> Optional[str]:
+        alert = self.alerts[alert_index]
+        return alert.header_text
+
+
+class JourneyStop:
     """A journey stop object to hold and manage arrival and departure details."""
 
     def __init__(self, stop: MBTAStop, arrival_time: str, departure_time: str, stop_sequence: int = None, arrival_uncertainty: Optional[str] = None,   departure_uncertainty: Optional[str] = None) -> None:
@@ -90,24 +167,22 @@ class MBTAJourneyStop:
 
     def get_time(self) -> Optional[datetime]:
         """Return the most relevant time for the stop."""
-        if self.real_departure_time is not None:
-            return self.real_departure_time
-        if self.departure_time is not None:
-            return self.departure_time
         if self.real_arrival_time is not None:
             return self.real_arrival_time
+        if self.real_departure_time is not None:
+            return self.real_departure_time
         if self.arrival_time is not None:
             return self.arrival_time
+        if self.departure_time is not None:
+            return self.departure_time
         return None
     
     def get_delay(self) -> Optional[float]:
         """Return the most relevant delay for the stop."""
-        if self.departure_delay is None and self.arrival_delay is None:
-            return None
-        if self.departure_delay is not None:
-            return self.departure_delay
         if self.arrival_delay is not None:
             return self.arrival_delay
+        if self.departure_delay is not None:
+            return self.departure_delay
         return None
         
     def get_time_to(self) -> Optional[float]:

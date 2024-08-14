@@ -33,13 +33,7 @@ class MBTAAlert:
         ]
 
     def __repr__(self) -> str:
-        return (f"MBTAalert(id={self.alert_id}, active_period_start={self.alert_active_period_start}, active_period_end={self.alert_active_period_end}, "
-                f"cause={self.alert_cause}, effect={self.alert_effect}, header_text={self.alert_header_text}, description_text={self.alert_description_text}, "
-                f"severity={self.alert_severity}, created_at={self.alert_created_at}, updated_at={self.alert_updated_at}, "
-                f"informed_entities={self.informed_entities})")
-
-    def __str__(self) -> str:
-        return f"Alert {self.alert_id}: {self.alert_header_text}"
+        return (f"MBTAalert(id={self.alert_id}, header_text={self.header_text})")
 
     def get_informed_stops(self) -> List[str]:
         """Retrieve a list of unique stops from informed entities."""
