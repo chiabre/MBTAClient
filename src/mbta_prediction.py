@@ -1,25 +1,19 @@
-import typing
-from typing import Any, Dict, Optional
+
+from typing import Any, Optional
+from mbta_utils import MBTAUtils
 
 class MBTAPrediction:
     """A prediction object to hold information about a prediction."""
     
-    UNCERTAINTY = {
-        '60': 'Trip that has already started',
-        '120': 'Trip not started and a vehicle is awaiting departure at the origin',
-        '300': 'Vehicle has not yet been assigned to the trip',
-        '301': 'Vehicle appears to be stalled or significantly delayed',
-        '360': 'Trip not started and a vehicle is completing a previous trip'
-    }
 
-    def __init__(self, prediction: Dict[str, Any]) -> None:
+    def __init__(self, prediction: dict[str, Any]) -> None:
         attributes = prediction.get('attributes', {})
         
         self.id: str = prediction.get('id', '')
         self.arrival_time: str = attributes.get('arrival_time', '')
-        self.arrival_uncertainty: str = self.get_uncertainty_description(attributes.get('arrival_uncertainty', ''))
+        self.arrival_uncertainty: str = MBTAUtils.get_uncertainty_description(attributes.get('arrival_uncertainty', ''))
         self.departure_time: str = attributes.get('departure_time', '')
-        self.departure_uncertainty: str = self.get_uncertainty_description(attributes.get('departure_uncertainty', ''))
+        self.departure_uncertainty: str = MBTAUtils.get_uncertainty_description(attributes.get('departure_uncertainty', ''))
         self.direction_id: int = attributes.get('direction_id', 0)
         self.last_trip: Optional[bool] = attributes.get('last_trip')
         self.revenue: Optional[bool] = attributes.get('revenue')
@@ -35,6 +29,4 @@ class MBTAPrediction:
     def __repr__(self) -> str:
         return (f"MBTAprediction(id={self.id}, route_id={self.route_id}, stop_id={self.stop_id}, trip_id={self.trip_id})")
 
-    @staticmethod
-    def get_uncertainty_description(key: str) -> str:
-        return MBTAPrediction.UNCERTAINTY.get(key, 'None')
+   

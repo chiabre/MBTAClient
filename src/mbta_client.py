@@ -1,11 +1,7 @@
 import aiohttp
-from aiohttp import ClientConnectionError, ClientResponseError
-
 import logging
-
-from typing import List, Optional, Dict, Any
-
-
+from aiohttp import ClientConnectionError, ClientResponseError
+from typing import Optional, Any
 from mbta_route import MBTARoute
 from mbta_stop import MBTAStop
 from mbta_schedule import MBTASchedule
@@ -32,47 +28,47 @@ class MBTAClient:
         self._api_key = api_key
 
     
-    async def get_route(self, id: str, params: Optional[Dict[str, Any]] = None) -> MBTARoute:
+    async def get_route(self, id: str, params: Optional[dict[str, Any]] = None) -> MBTARoute:
         """Get a route by its ID."""
         route_data = await self._fetch_data(f'{ENDPOINTS["ROUTES"]}/{id}', params)
         return MBTARoute(route_data['data'])
     
-    async def get_stop(self, id: str, params: Optional[Dict[str, Any]] = None) -> MBTAStop:
+    async def get_stop(self, id: str, params: Optional[dict[str, Any]] = None) -> MBTAStop:
         """Get a stop by its ID."""
         stop_data = await self._fetch_data(f'{ENDPOINTS["STOPS"]}/{id}', params)
         return MBTAStop(stop_data['data'])
     
-    async def get_trip(self, id: str, params: Optional[Dict[str, Any]] = None) -> MBTATrip:
+    async def get_trip(self, id: str, params: Optional[dict[str, Any]] = None) -> MBTATrip:
         """Get a trip by its ID."""
         trip_data = await self._fetch_data(f'{ENDPOINTS["TRIPS"]}/{id}', params)
         return MBTATrip(trip_data['data'])
         
-    async def list_routes(self, params: Optional[Dict[str, Any]] = None) -> List[MBTARoute]:
-        """List all routes."""
+    async def list_routes(self, params: Optional[dict[str, Any]] = None) -> list[MBTARoute]:
+        """list all routes."""
         route_data = await self._fetch_data(ENDPOINTS['ROUTES'], params)
         return [MBTARoute(item) for item in route_data['data']]
 
-    async def list_stops(self, params: Optional[Dict[str, Any]] = None) -> List[MBTAStop]:
-        """List all stops."""
+    async def list_stops(self, params: Optional[dict[str, Any]] = None) -> list[MBTAStop]:
+        """list all stops."""
         stop_data = await self._fetch_data(ENDPOINTS['STOPS'], params)
         return [MBTAStop(item) for item in stop_data['data']]
 
-    async def list_schedules(self, params: Optional[Dict[str, Any]] = None) -> List[MBTASchedule]:
-        """List all schedules."""
+    async def list_schedules(self, params: Optional[dict[str, Any]] = None) -> list[MBTASchedule]:
+        """list all schedules."""
         schedule_data = await self._fetch_data(ENDPOINTS['SCHEDULES'], params)
         return [MBTASchedule(item) for item in schedule_data['data']]
     
-    async def list_predictions(self, params: Optional[Dict[str, Any]] = None) -> List[MBTAPrediction]:
-        """List all predictions."""
+    async def list_predictions(self, params: Optional[dict[str, Any]] = None) -> list[MBTAPrediction]:
+        """list all predictions."""
         prediction_data = await self._fetch_data(ENDPOINTS['PREDICTIONS'], params)
         return [MBTAPrediction(item) for item in prediction_data['data']]
 
-    async def list_alerts(self, params: Optional[Dict[str, Any]] = None) -> List[MBTAAlert]:
-        """List all predictions."""
+    async def list_alerts(self, params: Optional[dict[str, Any]] = None) -> list[MBTAAlert]:
+        """list all predictions."""
         alert_data = await self._fetch_data(ENDPOINTS['ALERTS'], params)
         return [MBTAAlert(item) for item in alert_data['data']]
     
-    async def _fetch_data(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def _fetch_data(self, endpoint: str, params: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         """Helper method to fetch data from the MBTA API."""
         try:
             response = await self.request("get", endpoint, params)
@@ -85,8 +81,8 @@ class MBTAClient:
             raise
         
     async def request(
-        self, method: str, path: str, params: Optional[Dict[str, Any]] = None) -> aiohttp.ClientResponse:
-        """Make an HTTP request with optional query parameters and JSON body."""
+        self, method: str, path: str, params: Optional[dict[str, Any]] = None) -> aiohttp.ClientResponse:
+        """Make an HTTP request with Optional query parameters and JSON body."""
         
         if params is None:
             params = {}

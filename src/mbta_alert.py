@@ -1,10 +1,9 @@
-import typing
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 class MBTAAlert:
     """An alert object to hold information about an MBTA alert."""
 
-    def __init__(self, alert: Dict[str, Any]) -> None:
+    def __init__(self, alert: dict[str, Any]) -> None:
         attributes = alert.get('attributes', {})
         
         # Basic attributes
@@ -20,7 +19,7 @@ class MBTAAlert:
         self.updated_at: str = attributes.get('updated_at', '')
         
         # Informed entities
-        self.informed_entities: List[Dict[str, Any]] = [
+        self.informed_entities: list[dict[str, Any]] = [
             {
                 "activities": entity.get('activities', []),
                 "route": entity.get('route', ''),
@@ -35,14 +34,14 @@ class MBTAAlert:
     def __repr__(self) -> str:
         return (f"MBTAalert(id={self.alert_id}, header_text={self.header_text})")
 
-    def get_informed_stops(self) -> List[str]:
+    def get_informed_stops(self) -> list[str]:
         """Retrieve a list of unique stops from informed entities."""
         return list({entity['stop'] for entity in self.informed_entities if entity.get('stop')})
 
-    def get_informed_trips(self) -> List[str]:
+    def get_informed_trips(self) -> list[str]:
         """Retrieve a list of unique trips from informed entities."""
         return list({entity['trip'] for entity in self.informed_entities if entity.get('trip')})
 
-    def get_informed_routes(self) -> List[str]:
+    def get_informed_routes(self) -> list[str]:
         """Retrieve a list of unique routes from informed entities."""
         return list({entity['route'] for entity in self.informed_entities if entity.get('route')})
