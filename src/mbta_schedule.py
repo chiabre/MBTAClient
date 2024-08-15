@@ -1,11 +1,9 @@
-import typing
-from typing import Any, Dict
-from datetime import datetime, timezone
+from typing import Any
 
 class MBTASchedule:
     """A schedule object to hold information about a schedule."""
 
-    def __init__(self, schedule: Dict[str, Any]) -> None:
+    def __init__(self, schedule: dict[str, Any]) -> None:
         attributes = schedule.get('attributes', {})
 
         self.id: str = schedule.get('id', '')

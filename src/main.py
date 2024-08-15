@@ -1,22 +1,16 @@
 import aiohttp
-
-from mbta_client import MBTAClient
-from mbta_stop import MBTAStop
-from mbta_route import MBTARoute
-from journey_manager import JourneyManager
-
-from typing import Dict, List, Any
+from journey import JourneyManager
 
 API_KEY = None
-MAX_JOURNEYS = 2
+MAX_JOURNEYS = 5
 
 # ROUTE = 'Framingham/Worcester Line'
 # ARRIVE_AT = 'Wellesley Square'
 # DEPART_FROM = 'South Station'
 
-ROUTE = 'Framingham/Worcester Line'
-DEPART_FROM = 'Wellesley Square'
-ARRIVE_AT = 'South Station'
+# ROUTE = 'Framingham/Worcester Line'
+# DEPART_FROM = 'Wellesley Square'
+# ARRIVE_AT = 'South Station'
 
 # ROUTE = 'Red'
 # DEPART_FROM = 'South Station'
@@ -38,9 +32,9 @@ ARRIVE_AT = 'South Station'
 # DEPART_FROM = 'Back Bay'
 # ARRIVE_AT = 'Huntington Ave @ Opera Pl'
 
-# DEPART_FROM = 'Charlestown Navy Yard'
-# ARRIVE_AT = 'Long Wharf (South)'
-# ROUTE = 'Charlestown Ferry'
+DEPART_FROM = 'Charlestown Navy Yard'
+ARRIVE_AT = 'Long Wharf (South)'
+ROUTE = 'Charlestown Ferry'
 
 # ROUTE = None
 # DEPART_FROM = 'North Billerica'
@@ -54,41 +48,14 @@ ARRIVE_AT = 'South Station'
 # DEPART_FROM = 'Pemberton Point'
 # ARRIVE_AT = 'Summer St from Cushing Way to Water St (FLAG)'
 
-
-
 async def main():
     async with aiohttp.ClientSession() as session:
         
-        if API_KEY:
-            mbta_client = MBTAClient(session, API_KEY)
-        else:
-            mbta_client = MBTAClient(session)
-            
-
-        params = {
-            'filter[location_type]' :'0'
-        }
+        journey_manager = JourneyManager(session, API_KEY, MAX_JOURNEYS, DEPART_FROM, ARRIVE_AT, ROUTE)
+    
+        await journey_manager.async_init()
         
-        tmp_stops = await mbta_client.list_stops(params)
-        
-       
-        depart_from_stops = MBTAStop.get_stops_by_name(tmp_stops,DEPART_FROM )
-        arrive_at_stops = MBTAStop.get_stops_by_name(tmp_stops,ARRIVE_AT )
-        
-        del tmp_stops
-        
-        journey_route = None
-        if ROUTE:
-            tmp_routes: List[MBTARoute] = await mbta_client.list_routes()
-            for route in tmp_routes:
-                if route.long_name == ROUTE:
-                    journey_route: MBTARoute = route
-                    break  # Found the route, no need to continue the loop
-            del tmp_routes
-
-        journey_manager = JourneyManager(mbta_client, MAX_JOURNEYS, depart_from_stops, arrive_at_stops, journey_route)
-  
-        await journey_manager.populate()
+        await journey_manager.fetch_data()
         
         for journey in journey_manager.journeys.values():
             
@@ -108,8 +75,8 @@ async def main():
                     for i in range(len(journey.journey_stops)):
                         print("Station:", journey.get_stop_name(i))
                         print("Platform:", journey.get_platform_name(i))
-                        print("Time:", journey.get_stop_time( i))
-                        print("Delay:", journey.get_stop_delay( i))
+                        print("Time:", journey.get_stop_time(i))
+                        print("Delay:", journey.get_stop_delay(i))
                         print("Time To:", journey.get_stop_time_to(i))
                         print() 
                     for j in range(len(journey.alerts)):

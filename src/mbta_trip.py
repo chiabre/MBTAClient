@@ -1,10 +1,9 @@
-import typing
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 class MBTATrip:
     """A trip object to hold information about a trip."""
     
-    def __init__(self, trip: Dict[str, Any]) -> None:
+    def __init__(self, trip: dict[str, Any]) -> None:
         attributes = trip.get('attributes', {})
         
         self.id: str = trip.get('id', '')
