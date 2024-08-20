@@ -14,7 +14,6 @@ from mbta_schedule import MBTASchedule
 from mbta_prediction import MBTAPrediction
 from mbta_trip import MBTATrip
 from mbta_alert import MBTAAlert
-from mbta_utils import MBTAUtils
 
 
 class BaseHandler:

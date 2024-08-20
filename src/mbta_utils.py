@@ -2,9 +2,6 @@ from datetime import datetime
 import logging
 from typing import Optional
 
-from mbta_stop import MBTAStop
-from mbta_alert import MBTAAlert
-
 class MBTAUtils:
     
     ROUTE_TYPES= {
