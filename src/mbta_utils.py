@@ -3,6 +3,7 @@ import logging
 from typing import Optional
 
 from mbta_stop import MBTAStop
+from mbta_alert import MBTAAlert
 
 class MBTAUtils:
     
@@ -23,32 +24,6 @@ class MBTAUtils:
         '301': 'Vehicle appears to be stalled or significantly delayed',
         '360': 'Trip not started and a vehicle is completing a previous trip'
     }
-
-    @staticmethod
-    def get_stop_by_id(stops: list[MBTAStop], stop_id: str) -> Optional[MBTAStop]:
-        """Retrieve a MBTAstop from the list of MBTAstop objects based on the stop ID."""
-        for stop in stops:
-            if stop.id == stop_id:
-                return stop
-        return None
-    
-    @staticmethod
-    def get_stops_by_name(stops: list['MBTAStop'], stop_name: str) -> list['MBTAStop']:
-        """Retrieve a list of MBTAstops from the list of MBTAstops based on the stop name."""
-        matching_stops = [stop for stop in stops if stop.name.lower() == stop_name.lower()]
-        return matching_stops
-
-    @staticmethod
-    def get_stop_ids_from_stops(stops: list[MBTAStop]) -> list[str]:
-        """Extract all stop IDs from a list of MBTAstop objects."""
-        stop_ids = [stop.id for stop in stops]
-        return stop_ids
-    
-    @staticmethod
-    def get_stop_ids_by_name(stops: list['MBTAStop'], stop_name: str) -> list[str]:
-        """Retrieve a list of stop IDs from the list of MBTAstops based on the stop name."""
-        stop_ids = [stop.id for stop in stops if stop.name.lower() == stop_name.lower()]
-        return stop_ids
            
     @staticmethod
     def get_route_type_desc_by_type_id(route_type: int) -> str:
@@ -66,7 +41,7 @@ class MBTAUtils:
         return (time - now).total_seconds()
 
     @staticmethod
-    def compute_delay(real_time: Optional[datetime], time: Optional[datetime]) -> Optional[float]:
+    def calculate_time_difference(real_time: Optional[datetime], time: Optional[datetime]) -> Optional[float]:
         if real_time is None or time is None:
             return None
         return (real_time - time).total_seconds()

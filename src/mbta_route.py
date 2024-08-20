@@ -19,5 +19,5 @@ class MBTARoute:
         self.type: str = attributes.get('type', '')
 
     def __repr__(self) -> str:
-        return (f"MBTAroute(id={self.id}, short_name={self.short_name})")
+        return (f"MBTAroute(id={self.id})")
 
