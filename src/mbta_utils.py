@@ -1,5 +1,4 @@
 from datetime import datetime
-import logging
 from typing import Optional
 
 class MBTAUtils:
@@ -46,10 +45,6 @@ class MBTAUtils:
     @staticmethod
     def parse_datetime(time_str: str) -> Optional[datetime]:
         """Parse a string in ISO 8601 format to a datetime object."""
-        if time_str is None:
+        if not isinstance(time_str, str):
             return None
-        try:
-            return datetime.fromisoformat(time_str)
-        except ValueError as e:
-            logging.error(f"Error parsing datetime: {e}")
-            return None
+        return datetime.fromisoformat(time_str)

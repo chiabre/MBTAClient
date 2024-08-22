@@ -22,5 +22,5 @@ class MBTASchedule:
         self.trip_id: str = relationships.get('trip', {}).get('data', {}).get('id', '')
 
     def __repr__(self) -> str:
-        return (f"MBTAschedule(id={self.id}, route_id={self.route_id}, stop_id={self.stop_id}, trip_id={self.trip_id})")
+        return (f"MBTAschedule(id={self.id})")
 

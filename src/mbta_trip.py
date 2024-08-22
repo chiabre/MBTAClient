@@ -23,7 +23,7 @@ class MBTATrip:
 
     
     def __repr__(self) -> str:
-        return (f"MBTAtrip(id={self.id}, route_id={self.route_id})")
+        return (f"MBTAtrip(id={self.id})")
  
 
 

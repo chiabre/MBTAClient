@@ -1,11 +1,14 @@
-from typing import Optional
+from typing import Union, Optional
 from datetime import datetime
 
 from journey_stop import JourneyStop
+from mbta_schedule import MBTASchedule
+from mbta_prediction import MBTAPrediction
 from mbta_stop import MBTAStop
 from mbta_route import MBTARoute
 from mbta_trip import MBTATrip
 from mbta_alert import MBTAAlert
+from mbta_utils import MBTAUtils
 
 class Journey:
     """A class to manage a journey with multiple stops."""
@@ -15,6 +18,7 @@ class Journey:
         Initialize a Journey with optional route, trip, and alert information.
         Departure and arrival stops are also initialized as None.
         """
+        self.duration = None
         self.route: Optional[MBTARoute] = None
         self.trip: Optional[MBTATrip] = None
         self.alerts: list[MBTAAlert] = []
@@ -24,9 +28,9 @@ class Journey:
         }
 
     def __repr__(self) -> str:
-        return f"Journey(departure={self.stops['departure']}, arrival={self.stops['arrival']})"
+        return f"Journey(depart_from={self.stops['departure']}, arrive_at={self.stops['arrival']})"
     
-    def add_stop(self, stop_type: str, scheduling_data, stop: MBTAStop, status) -> None:
+    def add_stop(self, stop_type: str, scheduling_data: Union[MBTASchedule,MBTAPrediction], stop: MBTAStop, status) -> None:
         """Add or update a stop to the journey."""
         
         if self.stops[stop_type] is None: 
@@ -52,7 +56,9 @@ class Journey:
                 status
             )
             
-
+        if self.stops['departure'] and self.stops['arrival']:
+            self.duration = MBTAUtils.calculate_time_difference(self.stops['arrival'].get_time(),self.stops['departure'].get_time())
+        
     def get_stop(self, stop_type: str) -> Optional[JourneyStop]:
         """Return the specified stop or None if not set."""
         if stop_type in self.stops:
@@ -107,6 +113,11 @@ class Journey:
             trip_direction = self.trip.direction_id
             return self.route.direction_names[trip_direction]
         return None
+    
+    def get_trip_duration(self) -> Optional[str]:
+        if self.duration:
+            return self.duration
+        return None
 
     def get_stop_name(self, stop_type: str) -> Optional[str]:
         """Return the stop name for the specified stop type."""
@@ -128,6 +139,11 @@ class Journey:
         stop = self.get_stop(stop_type)
         return stop.get_delay() if stop else None
 
+    def get_stop_status(self, stop_type: str) -> Optional[float]:
+        """Return the stop delay for the specified stop type."""
+        stop = self.get_stop(stop_type)
+        return stop.status if stop else None
+    
     def get_stop_time_to(self, stop_type: str) -> Optional[float]:
         """Return the time to for the specified stop type."""
         stop = self.get_stop(stop_type)

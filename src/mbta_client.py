@@ -23,10 +23,10 @@ ENDPOINTS = {
 class MBTAClient:
     """Class to interact with the MBTA v3 API."""
 
-    def __init__(self, session: aiohttp.ClientSession, api_key: Optional[str] = None) -> None:
+    def __init__(self, session: aiohttp.ClientSession,  logger: logging.Logger, api_key: Optional[str] = None)-> None:
         self._session = session
         self._api_key = api_key
-
+        self.logger: logging.Logger = logger
     
     async def get_route(self, id: str, params: Optional[dict[str, Any]] = None) -> MBTARoute:
         """Get a route by its ID."""
@@ -82,7 +82,7 @@ class MBTAClient:
                 raise ValueError("Unexpected response format")
             return data
         except Exception as error:
-            logging.error(f"Error fetching data: {error}")
+            self.logger.error(f"Error fetching data: {error}")
             raise
         
     async def request(
@@ -106,13 +106,13 @@ class MBTAClient:
             return response
             
         except ClientConnectionError as error:
-            logging.error(f"Connection error: {error}")
+            self.logger.error(f"Connection error: {error}")
             raise
         except ClientResponseError as error:
-            logging.error(f"Client response error: {error.status} - {str(error)}")
+            self.logger.error(f"Client response error: {error.status} - {str(error)}")
             raise
         except Exception as error:
-            logging.error(f"An unexpected error occurred: {error}")
+            self.logger.error(f"An unexpected error occurred: {error}")
             raise        
 
 
