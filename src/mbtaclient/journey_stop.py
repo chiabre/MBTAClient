@@ -1,8 +1,8 @@
 from typing import Optional
 from datetime import datetime
 
-from mbta_stop import MBTAStop
-from mbta_utils import MBTAUtils
+from .mbta_stop import MBTAStop
+from .mbta_utils import MBTAUtils
 
 
 class JourneyStop:

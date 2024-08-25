@@ -6,20 +6,20 @@ from typing import Optional
 from datetime import date
 
 
-from mbta_client import MBTAClient
-from journey import Journey
-from mbta_stop import MBTAStop
-from mbta_route import MBTARoute
-from mbta_schedule import MBTASchedule
-from mbta_prediction import MBTAPrediction
-from mbta_trip import MBTATrip
-from mbta_alert import MBTAAlert
+from .mbta_client import MBTAClient
+from .journey import Journey
+from .mbta_stop import MBTAStop
+from .mbta_route import MBTARoute
+from .mbta_schedule import MBTASchedule
+from .mbta_prediction import MBTAPrediction
+from .mbta_trip import MBTATrip
+from .mbta_alert import MBTAAlert
 
 
 class BaseHandler:
     """Base class for handling MBTA journeys."""
     
-    def __init__(self, session: aiohttp.ClientSession, logger: logging.Logger, depart_from_name: str , arrive_at_name: str, api_key: str = None) -> None:
+    def __init__(self, session: aiohttp.ClientSession, depart_from_name: str , arrive_at_name: str, api_key: str = None, logger: logging.Logger = None) -> None:
     
         self.depart_from = {
             'name' : depart_from_name,
@@ -43,7 +43,7 @@ class BaseHandler:
         self._route_cache: dict[str, MBTARoute] = {}
         
         # Logger
-        self.logger: logging.Logger = logger
+        self.logger: logging.Logger = logger or logging.getLogger(__name__)
  
     def __repr__(self) -> str:
         return (f"BaseHandler(depart_from_name={self.depart_from['name']}, arrive_at_name={self.arrive_at['name']})")

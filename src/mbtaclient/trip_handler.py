@@ -1,18 +1,17 @@
-from typing import Optional
-import traceback
 import aiohttp
+import logging
 
-from base_handler import BaseHandler
-from journey import Journey
-from mbta_route import MBTARoute
-from mbta_trip import MBTATrip
-from mbta_schedule import MBTASchedule
-from mbta_prediction import MBTAPrediction
+from .base_handler import BaseHandler
+from .journey import Journey
+from .mbta_route import MBTARoute
+from .mbta_trip import MBTATrip
+from .mbta_schedule import MBTASchedule
+from .mbta_prediction import MBTAPrediction
 
 class TripHandler(BaseHandler):
     """Handler for managing a specific trip."""
 
-    def __init__(self, session: aiohttp.ClientSession, logger,  depart_from_name: str, arrive_at_name: str, trip_name: str, api_key:str = None ) :
+    def __init__(self, session: aiohttp.ClientSession, logger: logging.Logger,  depart_from_name: str, arrive_at_name: str, trip_name: str, api_key:str = None ) :
         super().__init__(session, logger, depart_from_name, arrive_at_name, api_key) 
         self.trip_name = trip_name
         

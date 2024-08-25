@@ -1,14 +1,14 @@
 from typing import Union, Optional
 from datetime import datetime
 
-from journey_stop import JourneyStop
-from mbta_schedule import MBTASchedule
-from mbta_prediction import MBTAPrediction
-from mbta_stop import MBTAStop
-from mbta_route import MBTARoute
-from mbta_trip import MBTATrip
-from mbta_alert import MBTAAlert
-from mbta_utils import MBTAUtils
+from .journey_stop import JourneyStop
+from .mbta_schedule import MBTASchedule
+from .mbta_prediction import MBTAPrediction
+from .mbta_stop import MBTAStop
+from .mbta_route import MBTARoute
+from .mbta_trip import MBTATrip
+from .mbta_alert import MBTAAlert
+from .mbta_utils import MBTAUtils
 
 class Journey:
     """A class to manage a journey with multiple stops."""

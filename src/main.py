@@ -1,8 +1,8 @@
 import aiohttp
 import logging
-from trip_handler import TripHandler
-from journeys_handler import JourneysHandler
-from journey import Journey
+from mbtaclient.trip_handler import TripHandler
+from mbtaclient.journeys_handler import JourneysHandler
+from mbtaclient.journey import Journey
 
 _LOGGER = logging.getLogger("MBTAClient")
 
@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO,  # Set the logging level to DEBUG
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 API_KEY = ''
-MAX_JOURNEYS = 5
+MAX_JOURNEYS = 1
 
 # DEPART_FROM = 'South Station'
 # ARRIVE_AT = 'Wellesley Square'
@@ -155,7 +155,7 @@ async def main():
         for trip in trips:
             print_journey(trip)
         
-        journeys_handler = JourneysHandler(session, _LOGGER, DEPART_FROM, ARRIVE_AT, MAX_JOURNEYS, API_KEY,)
+        journeys_handler = JourneysHandler(session, _LOGGER, DEPART_FROM, ARRIVE_AT, MAX_JOURNEYS, API_KEY)
         
         await journeys_handler.async_init()
          
