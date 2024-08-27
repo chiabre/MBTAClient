@@ -1,8 +1,15 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+
 from typing import Optional
+from collections.abc import Hashable
+import logging
+
+# logging.basicConfig(level=logging.DEBUG)
+_LOGGER = logging.getLogger(__name__)
+
 
 class MBTAUtils:
-    
+        
     ROUTE_TYPES= {
         # 0: 'Light Rail',   # Example: Green Line
         # 1: 'Heavy Rail',   # Example: Red Line
@@ -48,3 +55,46 @@ class MBTAUtils:
         if not isinstance(time_str, str):
             return None
         return datetime.fromisoformat(time_str)
+    
+
+
+from datetime import datetime, timedelta
+import logging
+
+logger = logging.getLogger(__name__)
+
+def memoize_async(expire_at_end_of_day=False):
+    def decorator(func):
+        cache = {}
+
+        def make_hashable(item):
+            if isinstance(item, dict):
+                # Exclude the 'filter[min_time]' key from the dictionary
+                item = {k: v for k, v in item.items() if k != 'filter[min_time]'}
+                return frozenset((make_hashable(k), make_hashable(v)) for k, v in item.items())
+            return str(item)  # Convert non-dict items to string
+
+        async def wrapper(*args):
+            current_time = datetime.now()
+            cache_key = tuple(make_hashable(arg) for arg in args)
+
+            if cache_key in cache:
+                cached_result, timestamp = cache[cache_key]
+
+                if expire_at_end_of_day:
+                    if timestamp.date() == current_time.date():
+                        _LOGGER.debug(f"Cache hit for {func.__name__} with arguments {cache_key} at {current_time}")
+                        return cached_result
+                else:  # Expiration based on 30 days
+                    if current_time - timestamp < timedelta(days=30):
+                        _LOGGER.debug(f"Cache hit for {func.__name__} with arguments {cache_key} at {current_time}")
+                        return cached_result
+
+            _LOGGER.debug(f"Cache miss for {func.__name__} with arguments {cache_key} at {current_time}")
+            result = await func(*args)
+            cache[cache_key] = (result, current_time)
+            _LOGGER.debug(f"Cache updated for key: {cache_key} at {current_time}")
+            return result
+
+        return wrapper
+    return decorator

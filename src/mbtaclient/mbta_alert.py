@@ -7,7 +7,7 @@ class MBTAAlert:
         attributes = alert.get('attributes', {})
         
         # Basic attributes
-        self.alert_id: str = alert.get('id', '')
+        self.id: str = alert.get('id', '')
         self.active_period_start: Optional[str] = attributes.get('active_period', [{}])[0].get('start', None)
         self.active_period_end: Optional[str] = attributes.get('active_period', [{}])[0].get('end', None)
         self.cause: str = attributes.get('cause', '')

@@ -90,7 +90,6 @@ class Journey:
         return self.route.color if self.route else None
 
     def get_route_description(self) -> Optional[str]:
-        from mbta_utils import MBTAUtils
         return MBTAUtils.get_route_type_desc_by_type_id(self.route.type) if self.route else None
 
     def get_route_type(self) -> Optional[str]:

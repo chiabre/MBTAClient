@@ -24,10 +24,10 @@ ENDPOINTS = {
 class MBTAClient:
     """Class to interact with the MBTA v3 API."""
 
-    def __init__(self, session: aiohttp.ClientSession,  logger: logging.Logger, api_key: Optional[str] = None)-> None:
-        self._session = session
-        self._api_key = api_key
-        self.logger: logging.Logger = logger
+    def __init__(self, session: aiohttp.ClientSession = None,  logger: logging.Logger = None, api_key: Optional[str] = None)-> None:
+        self._session = session or aiohttp.ClientSession()
+        self.logger: logging.Logger = logger or logging.getLogger(__name__)
+        self._api_key: str = api_key 
     
     async def get_route(self, id: str, params: Optional[dict[str, Any]] = None) -> MBTARoute:
         """Get a route by its ID."""
