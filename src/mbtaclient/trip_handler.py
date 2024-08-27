@@ -65,7 +65,10 @@ class TripHandler(BaseHandler):
             await super()._process_schedules(schedules)
             if next(iter(self.journeys.values())).get_stop_time_to('arrival') is not None:
                 break
-        
+            if i == 6:
+                self.logger.error(f"Error retriving scheduling for {self.depart_from['name']} and {self.arrive_at['name']} on trip {self.trip_name}")
+                raise MBTATripError("Invalid stops or trip names")  
+                   
         predictions = await self.__fetch_predictions()
         await super()._process_predictions(predictions)
         

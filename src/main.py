@@ -36,8 +36,8 @@ MAX_JOURNEYS = 2
 # DEPART_FROM = 'Charlestown Navy Yard'
 # ARRIVE_AT = 'Long Wharf (South)'
 
-# DEPART_FROM = 'North Billerica'
-# ARRIVE_AT = 'North Station'
+DEPART_FROM = 'North Billerica'
+ARRIVE_AT = 'North Station'
 
 # DEPART_FROM = 'Back Bay'
 # ARRIVE_AT = 'South Station'
@@ -46,8 +46,8 @@ MAX_JOURNEYS = 2
 # ARRIVE_AT = 'Summer St from Cushing Way to Water St (FLAG)'
 
 TRIP = '536'
-DEPART_FROM = 'Wellesley Square'
-ARRIVE_AT = 'South Station'
+# DEPART_FROM = 'Wellesley Square'
+# ARRIVE_AT = 'South Station'
 
 
 def print_journey(journey: Journey):
