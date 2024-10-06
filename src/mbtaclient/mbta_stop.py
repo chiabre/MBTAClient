@@ -22,5 +22,5 @@ class MBTAStop:
         self.wheelchair_boarding: int = attributes.get('wheelchair_boarding', 0)
 
     def __repr__(self) -> str:
-        return (f"MBTAstop(id={self.id}, name={self.name})")
+        return (f"MBTAstop(id={self.id})")
 

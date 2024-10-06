@@ -1,6 +1,6 @@
 
 from typing import Any, Optional
-from mbta_utils import MBTAUtils
+from .mbta_utils import MBTAUtils
 
 class MBTAPrediction:
     """A prediction object to hold information about a prediction."""
@@ -27,6 +27,6 @@ class MBTAPrediction:
         self.trip_id: str = prediction.get('relationships', {}).get('trip', {}).get('data', {}).get('id', '')
 
     def __repr__(self) -> str:
-        return (f"MBTAprediction(id={self.id}, route_id={self.route_id}, stop_id={self.stop_id}, trip_id={self.trip_id})")
+        return (f"MBTAprediction(id={self.id})")
 
    
