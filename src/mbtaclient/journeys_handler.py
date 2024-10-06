@@ -13,8 +13,8 @@ from .mbta_schedule import MBTASchedule
 class JourneysHandler(BaseHandler):
     """Handler for managing a specific journey."""
 
-    def __init__(self, session: aiohttp.ClientSession, logger: logging.Logger,  depart_from_name: str, arrive_at_name: str, max_journeys: int, api_key:str = None) :
-        super().__init__(session, logger, depart_from_name,arrive_at_name, api_key)
+    def __init__(self, depart_from_name: str, arrive_at_name: str, max_journeys: int, api_key:str = None, session: aiohttp.ClientSession = None, logger: logging.Logger = None):
+        super().__init__(depart_from_name=depart_from_name, arrive_at_name=arrive_at_name, api_key=api_key, session=session, logger=logger) 
         self.max_journeys = max_journeys
     
     async def async_init(self):

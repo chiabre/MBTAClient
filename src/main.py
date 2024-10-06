@@ -4,13 +4,13 @@ from mbtaclient.trip_handler import TripHandler
 from mbtaclient.journeys_handler import JourneysHandler
 from mbtaclient.journey import Journey
 
-_LOGGER = logging.getLogger("MBTAClient")
+_LOGGER = logging.getLogger(__name__)
 
 logging.basicConfig(level=logging.INFO,  # Set the logging level to DEBUG
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 API_KEY = ''
-MAX_JOURNEYS = 1
+MAX_JOURNEYS = 2
 
 # DEPART_FROM = 'South Station'
 # ARRIVE_AT = 'Wellesley Square'
@@ -36,8 +36,8 @@ MAX_JOURNEYS = 1
 # DEPART_FROM = 'Charlestown Navy Yard'
 # ARRIVE_AT = 'Long Wharf (South)'
 
-# DEPART_FROM = 'North Billerica'
-# ARRIVE_AT = 'North Station'
+DEPART_FROM = 'North Billerica'
+ARRIVE_AT = 'North Station'
 
 # DEPART_FROM = 'Back Bay'
 # ARRIVE_AT = 'South Station'
@@ -45,9 +45,9 @@ MAX_JOURNEYS = 1
 # DEPART_FROM = 'Pemberton Point'
 # ARRIVE_AT = 'Summer St from Cushing Way to Water St (FLAG)'
 
-TRIP = '518'
-DEPART_FROM = 'Wellesley Square'
-ARRIVE_AT = 'South Station'
+TRIP = '536'
+# DEPART_FROM = 'Wellesley Square'
+# ARRIVE_AT = 'South Station'
 
 
 def print_journey(journey: Journey):
@@ -146,23 +146,30 @@ def print_journey(journey: Journey):
 async def main():
     async with aiohttp.ClientSession() as session:
         
-        trip_hadler = TripHandler(session, _LOGGER, DEPART_FROM, ARRIVE_AT, TRIP, API_KEY)
+        try:
+            trip_hadler = TripHandler(depart_from_name=DEPART_FROM, arrive_at_name=ARRIVE_AT, trip_name=TRIP, api_key=API_KEY, session=session, logger=_LOGGER)
+            
+            await trip_hadler.async_init()
+            
+            trips = await trip_hadler.update()
+            
+            for trip in trips:
+                print_journey(trip)
+            
+            journeys_handler = JourneysHandler(depart_from_name=DEPART_FROM, arrive_at_name=ARRIVE_AT, max_journeys=MAX_JOURNEYS, api_key=API_KEY,session=session, logger=_LOGGER)
+            
+            await journeys_handler.async_init()
+            
+            journeys  = await journeys_handler.update()
+            journeys  = await journeys_handler.update()
+            
+            for journey in journeys:
+                print_journey(journey)
+            
+        except Exception as e:
+            _LOGGER.error(f"Error : {e}")
         
-        await trip_hadler.async_init()
-        
-        trips = await trip_hadler.update()
-        
-        for trip in trips:
-            print_journey(trip)
-        
-        journeys_handler = JourneysHandler(session, _LOGGER, DEPART_FROM, ARRIVE_AT, MAX_JOURNEYS, API_KEY)
-        
-        await journeys_handler.async_init()
-         
-        journeys  = await journeys_handler.update()
-        
-        for journey in journeys:
-            print_journey(journey)
+
 
             
                                 
