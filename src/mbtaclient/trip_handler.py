@@ -50,24 +50,34 @@ class TripHandler(BaseHandler):
             self.logger.error(f"Error during TripHandler initialization: {e}")
     
     async def update(self) -> list[Journey]:
-        
         now = datetime.now().astimezone()
-  
-        for i in range(7):      
-            params = {}
-            # Calculate the date for each attempt (i days after today)
-            date_to_try = (now + timedelta(days=i)).strftime('%Y-%m-%d')
-            params['filter[date]'] = date_to_try 
-            if i == 0:
-                params['filter[min_time]'] = now.strftime('%H:%M')      
-            # Attempt to get schedules for up to the next 7 days      
-            schedules = await self.__fetch_schedules(params)
-            await super()._process_schedules(schedules)
-            if next(iter(self.journeys.values())).get_stop_time_to('arrival') is not None:
-                break
-            if i == 6:
-                self.logger.error(f"Error retriving scheduling for {self.depart_from['name']} and {self.arrive_at['name']} on trip {self.trip_name}")
-                raise MBTATripError("Invalid stops or trip names")  
+
+        try:
+            for i in range(7):
+                params = {}
+                # Calculate the date for each attempt (i days after today)
+                date_to_try = (now + timedelta(days=i)).strftime('%Y-%m-%d')
+                params['filter[date]'] = date_to_try
+                if i == 0:
+                    params['filter[min_time]'] = now.strftime('%H:%M')
+                
+                # Attempt to get schedules for up to the next 7 days
+                schedules = await self.__fetch_schedules(params)
+                await super()._process_schedules(schedules)
+                if next(iter(self.journeys.values())).get_stop_time_to('arrival') is not None:
+                    break
+                
+                # If it's the last attempt and no valid schedules were found, log an error and raise an exception
+                if i == 6:
+                    self.logger.error(
+                        f"Error retrieving scheduling for {self.depart_from['name']} and {self.arrive_at['name']} on trip {self.trip_name}"
+                    )
+                    raise MBTATripError("Invalid stops for the trip")
+                
+        except MBTATripError as e:
+            # Handle the error here without re-raising it
+            self.logger.error(f"{e}")
+            # Continue with other operations despite the failure
                    
         predictions = await self.__fetch_predictions()
         await super()._process_predictions(predictions)
