@@ -1,12 +1,9 @@
 from datetime import datetime, timedelta
-
 from typing import Optional
-from collections.abc import Hashable
 import logging
 
 # logging.basicConfig(level=logging.DEBUG)
-_LOGGER = logging.getLogger(__name__)
-
+logger = logging.getLogger(__name__)
 
 class MBTAUtils:
         
@@ -40,6 +37,7 @@ class MBTAUtils:
     @staticmethod
     def time_to(time: Optional[datetime], now: datetime) -> Optional[float]:
         if time is None:
+            logger.warning("time_to: Provided 'time' is None.")
             return None
         return (time - now).total_seconds()
 
@@ -54,8 +52,11 @@ class MBTAUtils:
         """Parse a string in ISO 8601 format to a datetime object."""
         if not isinstance(time_str, str):
             return None
-        return datetime.fromisoformat(time_str)
-    
+        try:
+            return datetime.fromisoformat(time_str)
+        except ValueError as e:
+            logger.error(f"Error parsing datetime string: {e}")
+            return None
 
 
 from datetime import datetime, timedelta
@@ -83,17 +84,21 @@ def memoize_async(expire_at_end_of_day=False):
 
                 if expire_at_end_of_day:
                     if timestamp.date() == current_time.date():
-                        _LOGGER.debug(f"Cache hit for {func.__name__} with arguments {cache_key} at {current_time}")
+                        logger.debug(f"Cache hit for {func.__name__} with arguments {cache_key} at {current_time}")
                         return cached_result
                 else:  # Expiration based on 30 days
                     if current_time - timestamp < timedelta(days=30):
-                        _LOGGER.debug(f"Cache hit for {func.__name__} with arguments {cache_key} at {current_time}")
+                        logger.debug(f"Cache hit for {func.__name__} with arguments {cache_key} at {current_time}")
                         return cached_result
 
-            _LOGGER.debug(f"Cache miss for {func.__name__} with arguments {cache_key} at {current_time}")
-            result = await func(*args)
+            logger.debug(f"Cache miss for {func.__name__} with arguments {cache_key} at {current_time}")
+            try:
+                result = await func(*args)
+            except Exception as e:
+                logger.error(f"Error occurred while executing {func.__name__} with arguments {args}: {e}")
+                raise
             cache[cache_key] = (result, current_time)
-            _LOGGER.debug(f"Cache updated for key: {cache_key} at {current_time}")
+            logger.debug(f"Cache updated for key: {cache_key} at {current_time}")
             return result
 
         return wrapper
