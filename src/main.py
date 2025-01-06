@@ -6,11 +6,11 @@ from mbtaclient.journey import Journey
 
 _LOGGER = logging.getLogger(__name__)
 
-logging.basicConfig(level=logging.INFO,  # Set the logging level to DEBUG
+logging.basicConfig(level=logging.DEBUG,  # Set the logging level to DEBUG
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 API_KEY = ''
-MAX_JOURNEYS = 2
+MAX_JOURNEYS = 4
 
 # DEPART_FROM = 'South Station'
 # ARRIVE_AT = 'Wellesley Square'
@@ -36,8 +36,8 @@ MAX_JOURNEYS = 2
 # DEPART_FROM = 'Charlestown Navy Yard'
 # ARRIVE_AT = 'Long Wharf (South)'
 
-DEPART_FROM = 'North Billerica'
-ARRIVE_AT = 'North Station'
+# DEPART_FROM = 'North Billerica'
+# ARRIVE_AT = 'North Station'
 
 # DEPART_FROM = 'Back Bay'
 # ARRIVE_AT = 'South Station'
@@ -45,10 +45,12 @@ ARRIVE_AT = 'North Station'
 # DEPART_FROM = 'Pemberton Point'
 # ARRIVE_AT = 'Summer St from Cushing Way to Water St (FLAG)'
 
-TRIP = '536'
+# TRIP = '536'
 # DEPART_FROM = 'Wellesley Square'
 # ARRIVE_AT = 'South Station'
 
+DEPART_FROM = 'South Station'
+ARRIVE_AT = 'West Natick'
 
 def print_journey(journey: Journey):
     route_type = journey.get_route_type()
@@ -147,14 +149,14 @@ async def main():
     async with aiohttp.ClientSession() as session:
         
         try:
-            trip_hadler = TripHandler(depart_from_name=DEPART_FROM, arrive_at_name=ARRIVE_AT, trip_name=TRIP, api_key=API_KEY, session=session, logger=_LOGGER)
+            # trip_hadler = TripHandler(depart_from_name=DEPART_FROM, arrive_at_name=ARRIVE_AT, trip_name=TRIP, api_key=API_KEY, session=session, logger=_LOGGER)
             
-            await trip_hadler.async_init()
+            # await trip_hadler.async_init()
             
-            trips = await trip_hadler.update()
+            # trips = await trip_hadler.update()
             
-            for trip in trips:
-                print_journey(trip)
+            # for trip in trips:
+            #    print_journey(trip)
             
             journeys_handler = JourneysHandler(depart_from_name=DEPART_FROM, arrive_at_name=ARRIVE_AT, max_journeys=MAX_JOURNEYS, api_key=API_KEY,session=session, logger=_LOGGER)
             
@@ -168,10 +170,6 @@ async def main():
             
         except Exception as e:
             _LOGGER.error(f"Error : {e}")
-        
-
-
-            
                                 
 # Run the main function
 import asyncio
