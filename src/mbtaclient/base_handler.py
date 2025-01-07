@@ -31,15 +31,23 @@ class BaseHandler:
         }
         
         client_session = session or aiohttp.ClientSession()
-        self.mbta_client = MBTAClient(client_session,logger,api_key)
+        self.mbta_client = MBTAClient(client_session, logger, api_key)
 
         self.journeys: dict[str, Journey] = {} 
 
         self.logger: logging.Logger = logger or logging.getLogger(__name__)
         
     def __repr__(self) -> str:
-        return (f"BaseHandler(depart_from_name={self.depart_from['name']}, arrive_at_name={self.arrive_at['name']})")
+        return "BaseHandler(depart_from_name={}, arrive_at_name={})".format(self.depart_from['name'], self.arrive_at['name'])
  
+    async def __aenter__(self):
+        # Entering context, initialize and return the handler
+        await self._async_init()
+        return self
+    
+    async def __aexit__(self, exc_type, exc, tb):
+        # Exit context, clean up resources if necessary
+        await self.mbta_client.close()
         
     async def _async_init(self):
         stops = await self.__fetch_stops()
@@ -47,16 +55,19 @@ class BaseHandler:
     
     @memoize_async()
     async def __fetch_stops(self, params: dict = None) -> list[MBTAStop]:
-        """Retrive stops """
-        self.logger.debug("Retriving MBTA stops")
+        """Retrieve stops."""
+        self.logger.debug("Retrieving MBTA stops")
         base_params = {'filter[location_type]': '0'}
         if params is not None:
             base_params.update(params)
         try:
             stops: list[MBTAStop] = await self.mbta_client.list_stops(base_params)
             return stops
+        except aiohttp.ClientError as e:
+            self.logger.error("HTTP error occurred while retrieving MBTA stops: {}".format(e))
+            return []
         except Exception as e:
-            self.logger.error(f"Error retriving MBTA stops: {e}")
+            self.logger.error("Error retrieving MBTA stops: {}".format(e))
             return []
         
     def __process_stops(self, stops: list[MBTAStop]):
@@ -68,7 +79,7 @@ class BaseHandler:
 
         for stop in stops:
             if not isinstance(stop, MBTAStop):  # Validate data type
-                self.logger.warning(f"Unexpected data type for stop: {type(stop)}")
+                self.logger.warning("Unexpected data type for stop: {}".format(type(stop)))
                 continue  # Skip invalid data
 
             if stop.name.lower() == self.depart_from['name'].lower():
@@ -80,12 +91,12 @@ class BaseHandler:
                 arrive_at_ids.append(stop.id)
 
         if len(depart_from_stops) == 0:
-            self.logger.error(f"Error processing MBTA stop data for {self.depart_from['name']}")
-            raise MBTAStopError(f"Invalid stop name: {self.depart_from['name']}")
+            self.logger.error("Error processing MBTA stop data for {}".format(self.depart_from['name']))
+            raise MBTAStopError("Invalid stop name: {}".format(self.depart_from['name']))
 
         if len(arrive_at_stops) == 0:
-            self.logger.error(f"Error processing MBTA stop data for {self.arrive_at['name']}")
-            raise MBTAStopError(f"Invalid stop name: {self.arrive_at['name']}")
+            self.logger.error("Error processing MBTA stop data for {}".format(self.arrive_at['name']))
+            raise MBTAStopError("Invalid stop name: {}".format(self.arrive_at['name']))
 
         self.depart_from['stops'] = depart_from_stops
         self.depart_from['ids'] = depart_from_ids
@@ -99,19 +110,19 @@ class BaseHandler:
         return None
     
     def _get_stops_ids(self) -> list[str]:
-        return  self.depart_from['ids'] + self.arrive_at['ids']         
+        return self.depart_from['ids'] + self.arrive_at['ids']         
     
     def __get_stops_ids_by_stop_type(self, stop_type: str) -> Optional[list[str]]:
         if stop_type == 'departure':
             return self.depart_from['ids']
         elif stop_type == 'arrival':
             return self.arrive_at['ids']  
-        return None           
+        return None
     
     @memoize_async(expire_at_end_of_day=True)
     async def _fetch_schedules(self, params: Optional[dict] = None) -> list[MBTASchedule]:
-        """Retrive MBTA schedules"""
-        self.logger.debug("Retriving MBTA schedules")
+        """Retrieve MBTA schedules"""
+        self.logger.debug("Retrieving MBTA schedules")
         base_params = {
             'filter[stop]': ','.join(self._get_stops_ids()),
             'sort': 'departure_time'
@@ -121,8 +132,11 @@ class BaseHandler:
         try:
             schedules: list[MBTASchedule] = await self.mbta_client.list_schedules(params)
             return schedules
+        except aiohttp.ClientError as e:
+            self.logger.error("HTTP error occurred while retrieving MBTA schedules: {}".format(e))
+            return []
         except Exception as e:
-            self.logger.error(f"Error retriving MBTA schedules: {e}")
+            self.logger.error("Error retrieving MBTA schedules: {}".format(e))
             return []
             
     async def _process_schedules(self, schedules: list[MBTASchedule]):
@@ -131,7 +145,7 @@ class BaseHandler:
         for schedule in schedules:
             # Validate schedule data
             if not schedule.trip_id or not schedule.stop_id:
-                self.logger.error(f"Invalid schedule data: {schedule}")
+                self.logger.error("Invalid schedule data: {}".format(schedule))
                 continue  # Skip to the next schedule
 
             # If the schedule trip_id is not in the journeys
@@ -144,7 +158,7 @@ class BaseHandler:
             # Validate stop
             stop = self.__get_stop_by_id(schedule.stop_id)
             if not stop:
-                self.logger.debug(f"Stop {schedule.stop_id} of schedule {schedule.id} doesn't belong to the journey stop ids")
+                self.logger.debug("Stop {} of schedule {} doesn't belong to the journey stop ids".format(schedule.stop_id, schedule.id))
                 continue  # Skip to the next schedule
 
             departure_stops_ids = self.__get_stops_ids_by_stop_type('departure')
@@ -156,13 +170,11 @@ class BaseHandler:
             elif schedule.stop_id in arrival_stops_ids:
                 self.journeys[schedule.trip_id].add_stop('arrival', schedule, stop, 'SCHEDULED')
             else:
-                self.logger.warning(f"Stop ID {schedule.stop_id} is not categorized as departure or arrival for schedule: {schedule}")
-        
-    
+                self.logger.warning("Stop ID {} is not categorized as departure or arrival for schedule: {}".format(schedule.stop_id, schedule))
 
     async def _fetch_predictions(self, params: str = None) -> list[MBTAPrediction]:
-        """Retrive MBTA predictions based on the provided stop IDs"""
-        self.logger.debug("Retriving MBTA predictions")
+        """Retrieve MBTA predictions based on the provided stop IDs"""
+        self.logger.debug("Retrieving MBTA predictions")
         base_params = {
             'filter[stop]': ','.join(self._get_stops_ids()),
             'filter[revenue]': 'REVENUE',
@@ -173,17 +185,19 @@ class BaseHandler:
         try:
             predictions: list[MBTAPrediction] = await self.mbta_client.list_predictions(base_params)
             return predictions
+        except aiohttp.ClientError as e:
+            self.logger.error("HTTP error occurred while retrieving MBTA predictions: {}".format(e))
+            return []
         except Exception as e:
-            self.logger.error(f"Error retriving MBTA predictions: {e}")
+            self.logger.error("Error retrieving MBTA predictions: {}".format(e))
 
-          
     async def _process_predictions(self, predictions: list[MBTAPrediction]):
         self.logger.debug("Processing MBTA predictions")
 
         for prediction in predictions:
             # Validate prediction data
             if not prediction.trip_id or not prediction.stop_id:
-                self.logger.error(f"Invalid prediction data: {prediction}")
+                self.logger.error("Invalid prediction data: {}".format(prediction))
                 continue  # Skip to the next prediction
 
             # If the trip of the prediction is not in the journeys dict
@@ -196,7 +210,7 @@ class BaseHandler:
             # Validate stop
             stop = self.__get_stop_by_id(prediction.stop_id)
             if not stop:
-                self.logger.error(f"Invalid stop ID: {prediction.stop_id} for prediction: {prediction}")
+                self.logger.error("Invalid stop ID: {} for prediction: {}".format(prediction.stop_id, prediction))
                 continue  # Skip to the next prediction
 
             departure_stops_ids = self.__get_stops_ids_by_stop_type('departure')
@@ -212,12 +226,11 @@ class BaseHandler:
             elif prediction.stop_id in arrival_stops_ids:
                 self.journeys[prediction.trip_id].add_stop('arrival', prediction, stop, prediction.schedule_relationship)
             else:
-                self.logger.warning(f"Stop ID {prediction.stop_id} is not categorized as departure or arrival for prediction: {prediction}")
-                
+                self.logger.warning("Stop ID {} is not categorized as departure or arrival for prediction: {}".format(prediction.stop_id, prediction))               
 
-    async def _fetch_alerts(self,params: str = None) -> list[MBTAAlert]:
-        """Retrive MBTA alerts"""
-        self.logger.debug("Retriving MBTA alerts")
+    async def _fetch_alerts(self, params: str = None) -> list[MBTAAlert]:
+        """Retrieve MBTA alerts"""
+        self.logger.debug("Retrieving MBTA alerts")
                 
         # Prepare filter parameters
         base_params = {
@@ -232,9 +245,12 @@ class BaseHandler:
         try:
             alerts: list[MBTAAlert] = await self.mbta_client.list_alerts(base_params)
             return alerts
+        except aiohttp.ClientError as e:
+            self.logger.error("HTTP error occurred while retrieving MBTA alerts: {}".format(e))
+            return []
         except Exception as e:
-            self.logger.error(f"Error retriving MBTA alerts: {e}")
-
+            self.logger.error("Error retrieving MBTA alerts: {}".format(e))
+            return []
             
     def _process_alerts(self, alerts: list[MBTAAlert]):
         self.logger.debug("Processing MBTA alerts")
@@ -242,12 +258,12 @@ class BaseHandler:
         for alert in alerts:
             # Validate alert data
             if not alert.id or not alert.effect:
-                self.logger.error(f"Invalid alert data: {alert}")
+                self.logger.error("Invalid alert data: {}".format(alert))
                 continue  # Skip to the next alert
 
             # Iterate through each journey and associate relevant alerts
             for journey in self.journeys.values():
-            # Check if the alert is already associated by comparing IDs
+                # Check if the alert is already associated by comparing IDs
                 if any(existing_alert.id == alert.id for existing_alert in journey.alerts):
                     continue  # Skip if alert is already associated
 
@@ -256,7 +272,7 @@ class BaseHandler:
                     if self.__is_alert_relevant(alert, journey):
                         journey.alerts.append(alert)
                 except Exception as e:
-                    self.logger.error(f"Error processing MBTA alert {alert.id}: {e}")
+                    self.logger.error("Error processing MBTA alert {}: {}".format(alert.id, e))
                     continue  # Skip to the next journey if an error occurs
 
     def __is_alert_relevant(self, alert: MBTAAlert, journey: Journey) -> bool:
@@ -291,36 +307,44 @@ class BaseHandler:
     @memoize_async()
     async def _fetch_trip(self, trip_id: str, params: dict = None) -> Optional[MBTATrip]:
         """Retrieve MBTA trip based on trip_id."""
-        self.logger.debug(f"Retriving MBTA trip: {trip_id} ")
+        self.logger.debug("Retrieving MBTA trip: {}".format(trip_id))
         try:
             trip: MBTATrip = await self.mbta_client.get_trip(trip_id, params)
             return trip
+        except aiohttp.ClientError as e:
+            self.logger.error("HTTP error occurred while fetching trip {}: {}".format(trip_id, e))
+            return None
         except Exception as e:
-            self.logger.error(f"Error fetching trip {trip_id}: {e}")
+            self.logger.error("Error fetching trip {}: {}".format(trip_id, e))
             return None
     
     @memoize_async()
     async def _fetch_route(self, route_id: str, params: dict = None) -> Optional[MBTARoute]:
-        """Retrive MBTA route based on route_id."""
-        self.logger.debug(f"Retriving MBTA route: {route_id} ")
+        """Retrieve MBTA route based on route_id."""
+        self.logger.debug("Retrieving MBTA route: {}".format(route_id))
         try:
             route: MBTARoute = await self.mbta_client.get_route(route_id, params)
             return route
+        except aiohttp.ClientError as e:
+            self.logger.error("HTTP error occurred while retrieving MBTA route {}: {}".format(route_id, e))
+            return None
         except Exception as e:
-            self.logger.error(f"Error retriving MBTA route {route_id}: {e}")
+            self.logger.error("Error retrieving MBTA route {}: {}".format(route_id, e))
             return None
     
     @memoize_async()
     async def _fetch_trips(self, params: dict = None) -> Optional[MBTARoute]:
-        """Retrive MBTA trips"""
-        self.logger.debug("Retriving MBTA trips")
+        """Retrieve MBTA trips"""
+        self.logger.debug("Retrieving MBTA trips")
         try:
             trips: list[MBTATrip] = await self.mbta_client.list_trips(params)
             return trips
-        except Exception as e:
-            self.logger.error(f"Error retriving MBTA route: {e}")
+        except aiohttp.ClientError as e:
+            self.logger.error("HTTP error occurred while retrieving MBTA trips: {}".format(e))
             return None
-        
+        except Exception as e:
+            self.logger.error("Error retrieving MBTA trips: {}".format(e))
+            return None
 
 class MBTAStopError(Exception):
     pass

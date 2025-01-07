@@ -4,12 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "MBTAclient"
-version = "0.2.5"
+version = "0.2.8"
 description = "A Python client for interacting with the MBTA API"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aiohttp>=3.9.5"
+]
+
+license = { text = "MIT" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent"
 ]
 
 [[project.authors]]
@@ -19,7 +27,6 @@ email = "luca.chiabrera@gmail.com"
 [project.urls]
 Homepage = "https://github.com/chiabre/MBTAclient"
 Issues = "https://github.com/chiabre/MBTAclient/issues"
-
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -1,12 +1,9 @@
 from datetime import datetime, timedelta
-
 from typing import Optional
-from collections.abc import Hashable
 import logging
 
 # logging.basicConfig(level=logging.DEBUG)
-_LOGGER = logging.getLogger(__name__)
-
+logger = logging.getLogger(__name__)
 
 class MBTAUtils:
         
@@ -40,7 +37,18 @@ class MBTAUtils:
     @staticmethod
     def time_to(time: Optional[datetime], now: datetime) -> Optional[float]:
         if time is None:
+            logger.warning("time_to: Provided 'time' is None.")
             return None
+        # Check if both datetime objects have timezone info
+        if time.tzinfo != now.tzinfo:
+            # Make both datetimes the same type: either both naive or both aware
+            if time.tzinfo is None and now.tzinfo is not None:
+                # Convert time to aware by using the timezone of `now`
+                time = time.replace(tzinfo=now.tzinfo)
+            elif time.tzinfo is not None and now.tzinfo is None:
+                # Convert now to naive by stripping timezone info
+                now = now.replace(tzinfo=None)
+        # Now perform the calculation
         return (time - now).total_seconds()
 
     @staticmethod
@@ -54,8 +62,11 @@ class MBTAUtils:
         """Parse a string in ISO 8601 format to a datetime object."""
         if not isinstance(time_str, str):
             return None
-        return datetime.fromisoformat(time_str)
-    
+        try:
+            return datetime.fromisoformat(time_str)
+        except ValueError as e:
+            logger.error(f"Error parsing datetime string: {e}")
+            return None
 
 
 from datetime import datetime, timedelta
@@ -83,17 +94,21 @@ def memoize_async(expire_at_end_of_day=False):
 
                 if expire_at_end_of_day:
                     if timestamp.date() == current_time.date():
-                        _LOGGER.debug(f"Cache hit for {func.__name__} with arguments {cache_key} at {current_time}")
+                        logger.debug(f"Cache hit for {func.__name__} with arguments {cache_key} at {current_time}")
                         return cached_result
                 else:  # Expiration based on 30 days
                     if current_time - timestamp < timedelta(days=30):
-                        _LOGGER.debug(f"Cache hit for {func.__name__} with arguments {cache_key} at {current_time}")
+                        logger.debug(f"Cache hit for {func.__name__} with arguments {cache_key} at {current_time}")
                         return cached_result
 
-            _LOGGER.debug(f"Cache miss for {func.__name__} with arguments {cache_key} at {current_time}")
-            result = await func(*args)
+            logger.debug(f"Cache miss for {func.__name__} with arguments {cache_key} at {current_time}")
+            try:
+                result = await func(*args)
+            except Exception as e:
+                logger.error(f"Error occurred while executing {func.__name__} with arguments {args}: {e}")
+                raise
             cache[cache_key] = (result, current_time)
-            _LOGGER.debug(f"Cache updated for key: {cache_key} at {current_time}")
+            logger.debug(f"Cache updated for key: {cache_key} at {current_time}")
             return result
 
         return wrapper

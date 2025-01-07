@@ -29,6 +29,18 @@ class MBTAClient:
         self.logger: logging.Logger = logger or logging.getLogger(__name__)
         self._api_key: str = api_key 
     
+    async def __aenter__(self):
+        """Enter the context and return the client."""
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        """Exit the context and close the session."""
+        await self.close()
+    
+    async def close(self) -> None:
+        """Close the session manually."""
+        await self._session.close()
+        
     async def get_route(self, id: str, params: Optional[dict[str, Any]] = None) -> MBTARoute:
         """Get a route by its ID."""
         route_data = await self._fetch_data(f'{ENDPOINTS["ROUTES"]}/{id}', params)
@@ -80,12 +92,12 @@ class MBTAClient:
             response = await self.request("get", endpoint, params)
             data = await response.json() 
             if 'data' not in data:
-                raise ValueError("Unexpected response format")
+                raise ValueError("missing 'data'")
             return data
         except Exception as error:
             self.logger.error(f"Error fetching data: {error}")
             raise
-        
+            
     async def request(
         self, method: str, path: str, params: Optional[dict[str, Any]] = None) -> aiohttp.ClientResponse:
         """Make an HTTP request with Optional query parameters and JSON body."""
