@@ -1,10 +1,8 @@
 import pytest
+from unittest.mock import patch
 from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock
-from zoneinfo import ZoneInfo
-
 from src.mbtaclient.mbta_utils import MBTAUtils, memoize_async
-
+from zoneinfo import ZoneInfo
 
 class TestMBTAUtils:
     @pytest.fixture
@@ -85,42 +83,59 @@ class TestMBTAUtils:
         # Test with non-string input
         parsed_time = MBTAUtils.parse_datetime(123)
         assert parsed_time is None
+    
+    @pytest.mark.asyncio
+    @patch('src.mbtaclient.mbta_utils.logger.debug')
+    @patch('src.mbtaclient.mbta_utils.logger.error')
+    async def test_memoize_async(self, mock_error, mock_debug):
+        @memoize_async()
+        async def my_func(arg1, arg2):
+            return arg1 + arg2
 
-        @pytest.mark.asyncio
-        @patch('src.mbtaclient.mbta_utils.logger.debug')
-        @patch('src.mbtaclient.mbta_utils.logger.error')
-        async def test_memoize_async(self, mock_error, mock_debug):
-            @memoize_async()
-            async def my_func(arg1, arg2):
-                return arg1 + arg2
+        # First call should miss the cache
+        result1 = await my_func(1, 2)
+        assert result1 == 3
 
-            # First call should miss the cache
-            result1 = await my_func(1, 2)
-            assert result1 == 3
+        # Validate that debug logs are correct
+        debug_calls = mock_debug.call_args_list
+        assert len(debug_calls) >= 2  # Ensure at least 2 debug logs
+        assert "Cache miss for my_func with arguments ('1', '2')" in debug_calls[0][0][0]
+        assert "Cache updated for key: ('1', '2')" in debug_calls[1][0][0]
 
-            # Assert that both the 'Cache miss' and 'Cache updated' logs are called
-            mock_debug.assert_any_call(f"Cache miss for my_func with arguments {(TestMBTAUtils.make_hashable(1), TestMBTAUtils.make_hashable(2))} at {datetime.now().isoformat()}")
-            mock_debug.assert_any_call(f"Cache updated for key: {(TestMBTAUtils.make_hashable(1), TestMBTAUtils.make_hashable(2))} at {datetime.now().isoformat()}")
+        # Second call should hit the cache
+        result2 = await my_func(1, 2)
+        assert result2 == 3
 
-            # Second call should hit the cache
-            result2 = await my_func(1, 2)
-            assert result2 == 3
+        # Validate cache hit log
+        cache_hit_log = any(
+            "Cache hit for my_func with arguments ('1', '2')" in call[0][0]
+            for call in mock_debug.call_args_list
+        )
+        assert cache_hit_log
 
-            # Check if cache hit log is called
-            mock_debug.assert_any_call(f"Cache hit for my_func with arguments {(TestMBTAUtils.make_hashable(1), TestMBTAUtils.make_hashable(2))} at {datetime.now().isoformat()}")
+        # Call with different arguments should miss the cache
+        result3 = await my_func(1, 3)
+        assert result3 == 4
 
-            # Call with different arguments should miss the cache
-            result3 = await my_func(1, 3)
-            assert result3 == 4
-            mock_debug.assert_any_call(f"Cache miss for my_func with arguments {(TestMBTAUtils.make_hashable(1), TestMBTAUtils.make_hashable(3))} at {datetime.now().isoformat()}")
-            mock_debug.assert_any_call(f"Cache updated for key: {(TestMBTAUtils.make_hashable(1), TestMBTAUtils.make_hashable(3))} at {datetime.now().isoformat()}")
+        # Validate new cache miss and update logs
+        assert any(
+            "Cache miss for my_func with arguments ('1', '3')" in call[0][0]
+            for call in mock_debug.call_args_list
+        )
+        assert any(
+            "Cache updated for key: ('1', '3')" in call[0][0]
+            for call in mock_debug.call_args_list
+        )
 
-            # Test error handling
-            @memoize_async()
-            async def my_func_error(arg):
-                raise ValueError("Test error")
+        # Test error handling
+        @memoize_async()
+        async def my_func_error(arg):
+            raise ValueError("Test error")
 
-            with pytest.raises(ValueError):
-                await my_func_error(1)
-            mock_error.assert_called_with(f"Error occurred while executing my_func_error with arguments (1,): Test error")
+        with pytest.raises(ValueError):
+            await my_func_error(1)
 
+        # Convert the argument to match the actual logged format
+        mock_error.assert_called_with(
+            f"Error occurred while executing my_func_error with arguments ({1},): Test error"
+        )

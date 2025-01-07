@@ -9,7 +9,7 @@ description = "A Python client for interacting with the MBTA API"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "aiohttp>=3.9.5"
+    "aiohttp"
 ]
 
 license = { text = "MIT" }
