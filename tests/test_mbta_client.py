@@ -87,7 +87,7 @@ async def test_request_client_response_error():
         with pytest.raises(ClientResponseError):
             await client.request('get', '/test')
         mock_logger.error.assert_called_once_with(
-            'Client response error: 404 - 404, message=\'Not Found\', url=URL\'https://api-v3.mbta.com/test\''
+            'Client response error: 404 - 404, message=\'Not Found\', url=\'https://api-v3.mbta.com/test\''
         )
     await client.close()
 
