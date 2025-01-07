@@ -47,8 +47,12 @@ jobs:
 
       - name: Build package
         run: |
-          python setup.py sdist bdist_wheel
-
+          python -m build
+          
+      - name: Check pacakge
+        run: |
+          twine check dist/*
+          
       - name: Publish to PyPI
         env:
           TWINE_USERNAME: __token__
