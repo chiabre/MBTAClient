@@ -92,12 +92,12 @@ class MBTAClient:
             response = await self.request("get", endpoint, params)
             data = await response.json() 
             if 'data' not in data:
-                raise ValueError("Unexpected response format")
+                raise ValueError("missing 'data'")
             return data
         except Exception as error:
             self.logger.error(f"Error fetching data: {error}")
             raise
-        
+            
     async def request(
         self, method: str, path: str, params: Optional[dict[str, Any]] = None) -> aiohttp.ClientResponse:
         """Make an HTTP request with Optional query parameters and JSON body."""

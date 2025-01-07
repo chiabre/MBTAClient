@@ -50,7 +50,7 @@ class JourneyStop:
                 self.real_departure_time = MBTAUtils.parse_datetime(departure_time)
                 if self.departure_time is not None:
                     self.departure_delay = MBTAUtils.calculate_time_difference(self.real_departure_time, self.departure_time)
-
+            
     def get_time(self) -> Optional[datetime]:
         """Return the most relevant time for the stop."""
         if self.real_arrival_time is not None:

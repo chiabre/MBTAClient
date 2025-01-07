@@ -39,6 +39,16 @@ class MBTAUtils:
         if time is None:
             logger.warning("time_to: Provided 'time' is None.")
             return None
+        # Check if both datetime objects have timezone info
+        if time.tzinfo != now.tzinfo:
+            # Make both datetimes the same type: either both naive or both aware
+            if time.tzinfo is None and now.tzinfo is not None:
+                # Convert time to aware by using the timezone of `now`
+                time = time.replace(tzinfo=now.tzinfo)
+            elif time.tzinfo is not None and now.tzinfo is None:
+                # Convert now to naive by stripping timezone info
+                now = now.replace(tzinfo=None)
+        # Now perform the calculation
         return (time - now).total_seconds()
 
     @staticmethod
