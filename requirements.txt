@@ -2,3 +2,11 @@ aiohttp
 pytest
 pytest-cov
 pytest-asyncio
+flake8
+mypy
+bandit
+coverage
+setuptools
+wheel
+twine
+build
