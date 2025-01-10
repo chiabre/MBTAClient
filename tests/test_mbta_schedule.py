@@ -1,7 +1,7 @@
 import pytest
 from typing import Dict
 
-from src.mbtaclient.mbta_schedule import MBTASchedule
+from src.mbtaclient.schedule import MBTASchedule
 from tests.mock_data import VALID_SCHEDULE_RESPONSE_DATA  # Direct import
 
 def test_init():

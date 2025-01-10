@@ -1,5 +1,5 @@
 import pytest
-from src.mbtaclient.mbta_route import MBTARoute
+from src.mbtaclient.route import MBTARoute
 from tests.mock_data import VALID_ROUTE_RESPONSE_DATA  # Direct import
 
 def test_init():

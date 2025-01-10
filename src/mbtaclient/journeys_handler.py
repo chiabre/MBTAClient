@@ -4,9 +4,9 @@ from datetime import datetime
 
 from .base_handler import BaseHandler
 from .journey import Journey
-from .mbta_route import MBTARoute
-from .mbta_trip import MBTATrip
-from .mbta_schedule import MBTASchedule
+from .route import MBTARoute
+from .trip import MBTATrip
+from .schedule import MBTASchedule
 
 
 class JourneysHandler(BaseHandler):

@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime, timedelta
-from src.mbtaclient.mbta_stop import MBTAStop
-from src.mbtaclient.mbta_utils import MBTAUtils
+from src.mbtaclient.stop import MBTAStop
+from src.mbtaclient.utils import MBTAUtils
 from src.mbtaclient.journey_stop import JourneyStop
 
 

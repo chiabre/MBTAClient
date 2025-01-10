@@ -4,9 +4,9 @@ import logging
 from datetime import datetime, timedelta
 from .base_handler import BaseHandler, MBTATripError
 from .journey import Journey
-from .mbta_route import MBTARoute
-from .mbta_trip import MBTATrip
-from .mbta_schedule import MBTASchedule
+from .route import MBTARoute
+from .trip import MBTATrip
+from .schedule import MBTASchedule
 
 class TripHandler(BaseHandler):
     """Handler for managing a specific trip."""

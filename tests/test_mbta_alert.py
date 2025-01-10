@@ -1,5 +1,5 @@
 import pytest
-from src.mbtaclient.mbta_alert import MBTAAlert
+from src.mbtaclient.alert import MBTAAlert
 from tests.mock_data import VALID_ALERT_RESPONSE_DATA  # Direct import from mock data
 
 def test_mbta_alert_init():

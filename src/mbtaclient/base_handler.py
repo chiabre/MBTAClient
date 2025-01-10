@@ -3,15 +3,15 @@ import aiohttp
 
 from typing import Optional
 
-from .mbta_client import MBTAClient
+from .client import MBTAClient
 from .journey import Journey
-from .mbta_stop import MBTAStop
-from .mbta_route import MBTARoute
-from .mbta_schedule import MBTASchedule
-from .mbta_prediction import MBTAPrediction
-from .mbta_trip import MBTATrip
-from .mbta_alert import MBTAAlert
-from .mbta_utils import memoize_async
+from .stop import MBTAStop
+from .route import MBTARoute
+from .schedule import MBTASchedule
+from .prediction import MBTAPrediction
+from .trip import MBTATrip
+from .alert import MBTAAlert
+from .utils import memoize_async
 
 
 class BaseHandler:
@@ -32,7 +32,7 @@ class BaseHandler:
         
         client_session = session or aiohttp.ClientSession()
         self.mbta_client = MBTAClient(client_session, logger, api_key)
-
+        
         self.journeys: dict[str, Journey] = {} 
 
         self.logger: logging.Logger = logger or logging.getLogger(__name__)

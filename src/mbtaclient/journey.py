@@ -2,13 +2,13 @@ from typing import Union, Optional
 from datetime import datetime
 
 from .journey_stop import JourneyStop
-from .mbta_schedule import MBTASchedule
-from .mbta_prediction import MBTAPrediction
-from .mbta_stop import MBTAStop
-from .mbta_route import MBTARoute
-from .mbta_trip import MBTATrip
-from .mbta_alert import MBTAAlert
-from .mbta_utils import MBTAUtils
+from .schedule import MBTASchedule
+from .prediction import MBTAPrediction
+from .stop import MBTAStop
+from .route import MBTARoute
+from .trip import MBTATrip
+from .alert import MBTAAlert
+from .utils import MBTAUtils
 
 class Journey:
     """A class to manage a journey with multiple stops."""
@@ -115,7 +115,7 @@ class Journey:
     
     def get_trip_duration(self) -> Optional[str]:
         if self.duration:
-            return self.duration
+            return round(self.duration,0)
         return None
 
     def get_stop_name(self, stop_type: str) -> Optional[str]:

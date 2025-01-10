@@ -1,8 +1,8 @@
 from typing import Optional
 from datetime import datetime
 
-from .mbta_stop import MBTAStop
-from .mbta_utils import MBTAUtils
+from .stop import MBTAStop
+from .utils import MBTAUtils
 
 
 class JourneyStop:
@@ -63,12 +63,12 @@ class JourneyStop:
             return self.departure_time
         return None
     
-    def get_delay(self) -> Optional[float]:
+    def get_delay(self) -> Optional[int]:
         """Return the most relevant delay for the stop."""
         if self.arrival_delay is not None:
-            return self.arrival_delay
+            return int(round(self.arrival_delay,0))
         if self.departure_delay is not None:
-            return self.departure_delay
+            return int(round(self.departure_delay,0))
         return None
         
     def get_time_to(self) -> float:

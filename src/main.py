@@ -6,11 +6,11 @@ from mbtaclient.journey import Journey
 
 _LOGGER = logging.getLogger(__name__)
 
-logging.basicConfig(level=logging.INFO,  # Set the logging level to INFO
+logging.basicConfig(level=logging.DEBUG,  # Set the logging level to INFO
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 API_KEY = ''
-MAX_JOURNEYS = 1
+MAX_JOURNEYS = 2
 
 # DEPART_FROM = 'South Station'
 # ARRIVE_AT = 'Wellesley Square'

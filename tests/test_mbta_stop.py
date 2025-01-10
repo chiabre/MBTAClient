@@ -1,5 +1,5 @@
 import pytest
-from src.mbtaclient.mbta_stop import MBTAStop
+from src.mbtaclient.stop import MBTAStop
 from tests.mock_data import VALID_STOP_RESPONSE_DATA  # Direct import
 
 def test_init():

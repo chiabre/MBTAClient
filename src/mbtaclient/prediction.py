@@ -1,6 +1,6 @@
 
 from typing import Any, Optional
-from .mbta_utils import MBTAUtils
+from .utils import MBTAUtils
 
 class MBTAPrediction:
     """A prediction object to hold information about a prediction."""

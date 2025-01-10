@@ -35,7 +35,7 @@ class MBTAUtils:
         return MBTAUtils.UNCERTAINTY.get(key, 'None')
     
     @staticmethod
-    def time_to(time: Optional[datetime], now: datetime) -> Optional[float]:
+    def time_to(time: Optional[datetime], now: datetime) -> Optional[int]:
         if time is None:
             logger.warning("time_to: Provided 'time' is None.")
             return None
@@ -49,13 +49,13 @@ class MBTAUtils:
                 # Convert now to naive by stripping timezone info
                 now = now.replace(tzinfo=None)
         # Now perform the calculation
-        return (time - now).total_seconds()
+        return int(round((time - now).total_seconds(),0))
 
     @staticmethod
-    def calculate_time_difference(real_time: Optional[datetime], time: Optional[datetime]) -> Optional[float]:
+    def calculate_time_difference(real_time: Optional[datetime], time: Optional[datetime]) -> Optional[int]:
         if real_time is None or time is None:
             return None
-        return (real_time - time).total_seconds()
+        return int(round((real_time - time).total_seconds(),0))
 
     @staticmethod
     def parse_datetime(time_str: str) -> Optional[datetime]:

@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch
 from datetime import datetime, timedelta
-from src.mbtaclient.mbta_utils import MBTAUtils, memoize_async
+from src.mbtaclient.utils import MBTAUtils, memoize_async
 from zoneinfo import ZoneInfo
 
 class TestMBTAUtils:

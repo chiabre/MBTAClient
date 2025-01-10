@@ -1,5 +1,5 @@
 import pytest
-from src.mbtaclient.mbta_trip import MBTATrip
+from src.mbtaclient.trip import MBTATrip
 from tests.mock_data import VALID_TRIP_RESPONSE_DATA  # Direct import
 
 def test_init():

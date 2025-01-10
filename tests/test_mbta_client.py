@@ -3,13 +3,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from aiohttp import ClientConnectionError, ClientResponseError, RequestInfo
 from yarl import URL
 
-from src.mbtaclient.mbta_client import MBTAClient, MBTA_DEFAULT_HOST, ENDPOINTS
-from src.mbtaclient.mbta_route import MBTARoute
-from src.mbtaclient.mbta_trip import MBTATrip
-from src.mbtaclient.mbta_stop import MBTAStop
-from src.mbtaclient.mbta_schedule import MBTASchedule
-from src.mbtaclient.mbta_prediction import MBTAPrediction
-from src.mbtaclient.mbta_alert import MBTAAlert
+from src.mbtaclient.client import MBTAClient, MBTA_DEFAULT_HOST, ENDPOINTS
+from src.mbtaclient.route import MBTARoute
+from src.mbtaclient.trip import MBTATrip
+from src.mbtaclient.stop import MBTAStop
+from src.mbtaclient.schedule import MBTASchedule
+from src.mbtaclient.prediction import MBTAPrediction
+from src.mbtaclient.alert import MBTAAlert
 
 
 @pytest.mark.asyncio

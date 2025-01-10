@@ -1,6 +1,6 @@
 import pytest
-from src.mbtaclient.mbta_prediction import MBTAPrediction
-from src.mbtaclient.mbta_utils import MBTAUtils
+from src.mbtaclient.prediction import MBTAPrediction
+from src.mbtaclient.utils import MBTAUtils
 from tests.mock_data import VALID_PREDICTION_RESPONSE_DATA  # Direct import
 
 def test_init():
