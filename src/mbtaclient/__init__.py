@@ -9,6 +9,7 @@ from .schedule import MBTASchedule
 from .stop import MBTAStop
 from .trip import MBTATrip
 from .trip_handler import TripHandler
+from .cache_manager import CacheManager
 
 __all__ = [
     "JourneyStop",
@@ -16,12 +17,14 @@ __all__ = [
     "JourneysHandler",
     "MBTAAlert",
     "MBTAClient",
+    "SessionManager",
     "MBTARoute",
     "MBTATrip",
     "MBTAStop",
     "MBTASchedule",
     "MBTAPrediction",
     "TripHandler",
+    "CacheManager"
 ]
 
 __version__ = "0.3.2"

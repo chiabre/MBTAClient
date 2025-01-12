@@ -51,7 +51,7 @@ class TripHandler(BaseHandler):
             self.logger.error("Error during TripHandler initialization: {}".format(e))
     
     async def update(self) -> list[Journey]:
-        now = datetime.now().astimezone()
+        # now = datetime.now().astimezone()
         self.logger.debug("Updating trips for {}".format(self.trip_name))
         
         try:
@@ -59,8 +59,8 @@ class TripHandler(BaseHandler):
                 params = {}
                 date_to_try = (now + timedelta(days=i)).strftime('%Y-%m-%d')
                 params['filter[date]'] = date_to_try
-                if i == 0:
-                    params['filter[min_time]'] = now.strftime('%H:%M')
+                # if i == 0:
+                    # params['filter[min_time]'] = now.strftime('%H:%M')
                 
                 self.logger.debug("Fetching schedules for {} for trip {}".format(date_to_try, self.trip_name))
                 schedules = await self.__fetch_schedules(params)

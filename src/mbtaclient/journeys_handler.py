@@ -1,3 +1,4 @@
+from typing import Optional
 import aiohttp
 import logging
 from datetime import datetime
@@ -7,22 +8,29 @@ from .journey import Journey
 from .route import MBTARoute
 from .trip import MBTATrip
 from .schedule import MBTASchedule
+from .cache_manager import CacheManager
 
 
 class JourneysHandler(BaseHandler):
     """Handler for managing a specific journey."""
 
-    def __init__(self, depart_from_name: str, arrive_at_name: str, max_journeys: int = 4, api_key: str = None, session: aiohttp.ClientSession = None, logger: logging.Logger = None):
-        super().__init__(depart_from_name=depart_from_name, arrive_at_name=arrive_at_name, api_key=api_key, session=session, logger=logger) 
+    def __init__(self, 
+                 depart_from_name: str, 
+                 arrive_at_name: str, 
+                 max_journeys: Optional[int] = 4, 
+                 api_key: Optional[str] = None, 
+                 session: Optional[aiohttp.ClientSession] = None, 
+                 cache_manager: Optional[CacheManager] = None, 
+                 logger: Optional[logging.Logger] = None):
+        super().__init__(
+            depart_from_name=depart_from_name, 
+            arrive_at_name=arrive_at_name, 
+            api_key=api_key, 
+            session=session,
+            cache_manager=cache_manager, 
+            logger=logger) 
         self.max_journeys = max_journeys
         self.logger: logging.Logger = logger or logging.getLogger(__name__)
-            
-    async def async_init(self):
-        try:
-            await super()._async_init()
-        except Exception as e:
-            self.logger.error("Error during async initialization: {}".format(e))
-            raise
     
     async def update(self) -> list[Journey]:
         try:
@@ -48,11 +56,11 @@ class JourneysHandler(BaseHandler):
     
     async def __fetch_schedules(self) -> list[MBTASchedule]:
         try:
-            now = datetime.now().astimezone()
+            # now = datetime.now().astimezone()
             
             params = {
                 'filter[stop]': ','.join(super()._get_stops_ids()),
-                'filter[min_time]': now.strftime('%H:%M'),
+                # 'filter[min_time]': now.strftime('%H:%M'),
             }
             
             schedules = await super()._fetch_schedules(params)

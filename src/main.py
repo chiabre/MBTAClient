@@ -3,6 +3,8 @@ import logging
 from mbtaclient.trip_handler import TripHandler
 from mbtaclient.journeys_handler import JourneysHandler
 from mbtaclient.journey import Journey
+from mbtaclient.client import MBTAClient
+from mbtaclient.cache_manager import CacheManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -146,9 +148,9 @@ def print_journey(journey: Journey):
                 
                 
 async def main():
-    async with aiohttp.ClientSession() as session:
+    #async with aiohttp.ClientSession() as session:
         
-        try:
+        #try:
             # trip_hadler = TripHandler(depart_from_name=DEPART_FROM, arrive_at_name=ARRIVE_AT, trip_name=TRIP, api_key=API_KEY, session=session, logger=_LOGGER)
             
             # await trip_hadler.async_init()
@@ -157,17 +159,30 @@ async def main():
             
             # for trip in trips:
             #    print_journey(trip)
-            
-            journeys_handler = JourneysHandler(depart_from_name=DEPART_FROM, arrive_at_name=ARRIVE_AT, max_journeys=MAX_JOURNEYS, api_key=API_KEY,session=session, logger=_LOGGER)
-            
-            await journeys_handler.async_init()
-            
+        
+    cache_manger = CacheManager()     
+    async with JourneysHandler(depart_from_name=DEPART_FROM, arrive_at_name=ARRIVE_AT, max_journeys=MAX_JOURNEYS, api_key=API_KEY,session=None, cache_manager=cache_manger,logger=None) as journeys_handler :
+        try:
+
             journeys  = await journeys_handler.update()
+            _LOGGER.info("**********")   
             journeys  = await journeys_handler.update()
             
             for journey in journeys:
                 print_journey(journey)
+        except Exception as e:
+            _LOGGER.error(f"Error : {e}")
+    
+    _LOGGER.info("##########")           
+    async with JourneysHandler(depart_from_name=DEPART_FROM, arrive_at_name=ARRIVE_AT, max_journeys=MAX_JOURNEYS, api_key=API_KEY,session=None, cache_manager=cache_manger,logger=None) as journeys_handler :
+        try:
+
+            journeys  = await journeys_handler.update()
+            _LOGGER.info("**********")   
+            journeys  = await journeys_handler.update()
             
+            for journey in journeys:
+                print_journey(journey)      
         except Exception as e:
             _LOGGER.error(f"Error : {e}")
                                 

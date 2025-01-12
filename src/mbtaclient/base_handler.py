@@ -11,13 +11,19 @@ from .schedule import MBTASchedule
 from .prediction import MBTAPrediction
 from .trip import MBTATrip
 from .alert import MBTAAlert
-from .utils import memoize_async
-
-
+from .cache_manager import CacheManager
+ 
 class BaseHandler:
     """Base class for handling MBTA journeys."""
     
-    def __init__(self, depart_from_name: str , arrive_at_name: str, api_key: str = None, session: aiohttp.ClientSession = None, logger: logging.Logger = None) -> None:
+    def __init__(
+        self, 
+        depart_from_name: str , 
+        arrive_at_name: str, 
+        api_key: str = None, 
+        session: aiohttp.ClientSession = None, 
+        cache_manager: Optional[CacheManager] = None, 
+        logger: logging.Logger = None) -> None:
     
         self.depart_from = {
             'name' : depart_from_name,
@@ -30,7 +36,7 @@ class BaseHandler:
             'ids' : None
         }
         
-        self.mbta_client = MBTAClient(session, logger, api_key)
+        self.mbta_client = MBTAClient(api_key=api_key, session=session, cache_manager = cache_manager, logger=logger,)
         
         self.journeys: dict[str, Journey] = {} 
 
@@ -41,18 +47,15 @@ class BaseHandler:
  
     async def __aenter__(self):
         # Entering context, initialize and return the handler
-        await self._async_init()
+        await self.mbta_client.__aenter__()
+        stops = await self.__fetch_stops()
+        self.__process_stops(stops)
         return self
     
     async def __aexit__(self, exc_type, exc, tb):
         # Exit context, clean up resources if necessary
-        await self.mbta_client.close()
-        
-    async def _async_init(self):
-        stops = await self.__fetch_stops()
-        self.__process_stops(stops)
+        await self.mbta_client.__aexit__(exc_type, exc, tb)
     
-    @memoize_async()
     async def __fetch_stops(self, params: dict = None) -> list[MBTAStop]:
         """Retrieve stops."""
         self.logger.debug("Retrieving MBTA stops")
@@ -118,7 +121,6 @@ class BaseHandler:
             return self.arrive_at['ids']  
         return None
     
-    @memoize_async(expire_at_end_of_day=True)
     async def _fetch_schedules(self, params: Optional[dict] = None) -> list[MBTASchedule]:
         """Retrieve MBTA schedules"""
         self.logger.debug("Retrieving MBTA schedules")
@@ -303,7 +305,6 @@ class BaseHandler:
             return False
         return True
     
-    @memoize_async()
     async def _fetch_trip(self, trip_id: str, params: dict = None) -> Optional[MBTATrip]:
         """Retrieve MBTA trip based on trip_id."""
         self.logger.debug("Retrieving MBTA trip: {}".format(trip_id))
@@ -317,7 +318,6 @@ class BaseHandler:
             self.logger.error("Error fetching trip {}: {}".format(trip_id, e))
             return None
     
-    @memoize_async()
     async def _fetch_route(self, route_id: str, params: dict = None) -> Optional[MBTARoute]:
         """Retrieve MBTA route based on route_id."""
         self.logger.debug("Retrieving MBTA route: {}".format(route_id))
@@ -331,7 +331,6 @@ class BaseHandler:
             self.logger.error("Error retrieving MBTA route {}: {}".format(route_id, e))
             return None
     
-    @memoize_async()
     async def _fetch_trips(self, params: dict = None) -> Optional[MBTARoute]:
         """Retrieve MBTA trips"""
         self.logger.debug("Retrieving MBTA trips")
