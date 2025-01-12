@@ -71,7 +71,7 @@ class JourneysHandler(BaseHandler):
                 if journey.stops['departure'] 
                 and journey.stops['arrival'] 
                 and journey.stops['departure'].stop_sequence < journey.stops['arrival'].stop_sequence
-                #and journey.stops['departure'].get_time() is not None 
+                and journey.stops['departure'].get_time() is not None 
                 and journey.stops['departure'].get_time() >= now
             }
 

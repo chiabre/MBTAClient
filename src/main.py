@@ -21,8 +21,8 @@ MAX_JOURNEYS = 2
 # DEPART_FROM = 'South Station'
 # ARRIVE_AT = 'Braintree'
 
-# DEPART_FROM = 'Copley'
-# ARRIVE_AT = 'Park Street'
+DEPART_FROM = 'Copley'
+ARRIVE_AT = 'Park Street'
 
 # DEPART_FROM = 'North Station'
 # ARRIVE_AT = 'Swampscott'
@@ -49,8 +49,8 @@ MAX_JOURNEYS = 2
 # DEPART_FROM = 'Wellesley Square'
 # ARRIVE_AT = 'South Station'
 
-DEPART_FROM = 'South Station'
-ARRIVE_AT = 'West Natick'
+# DEPART_FROM = 'South Station'
+# ARRIVE_AT = 'West Natick'
 
 def print_journey(journey: Journey):
     route_type = journey.get_route_type()
