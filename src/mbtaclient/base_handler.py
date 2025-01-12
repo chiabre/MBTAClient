@@ -30,8 +30,7 @@ class BaseHandler:
             'ids' : None
         }
         
-        client_session = session or aiohttp.ClientSession()
-        self.mbta_client = MBTAClient(client_session, logger, api_key)
+        self.mbta_client = MBTAClient(session, logger, api_key)
         
         self.journeys: dict[str, Journey] = {} 
 

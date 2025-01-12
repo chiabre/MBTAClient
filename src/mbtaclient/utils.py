@@ -6,7 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class MBTAUtils:
-        
+            
     ROUTE_TYPES= {
         # 0: 'Light Rail',   # Example: Green Line
         # 1: 'Heavy Rail',   # Example: Red Line
