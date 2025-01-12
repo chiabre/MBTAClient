@@ -75,10 +75,14 @@ class JourneysHandler(BaseHandler):
                 and journey.stops['departure'].get_time() >= now
             }
 
+            # Sort by arrival time if available, otherwise fallback to departure time
             sorted_journeys = dict(
                 sorted(
                     processed_journeys.items(),
-                    key=lambda item: item[1].stops['departure'].get_time()
+                    key=lambda item: (
+                        item[1].stops['arrival'].get_time() if item[1].stops['arrival'].get_time() is not None 
+                        else item[1].stops['departure'].get_time()
+                    )
                 )
             )
 
