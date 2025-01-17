@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime, timedelta
-from src.mbtaclient.stop import MBTAStop
+from mbtaclient.models.mbta_stop import MBTAStop
 from src.mbtaclient.utils import MBTAUtils
 from src.mbtaclient.journey_stop import JourneyStop
 

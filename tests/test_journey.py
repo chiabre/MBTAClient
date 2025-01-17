@@ -3,11 +3,11 @@ from unittest.mock import MagicMock
 from datetime import datetime
 
 from src.mbtaclient.journey import Journey
-from src.mbtaclient.schedule import MBTASchedule
-from src.mbtaclient.prediction import MBTAPrediction
-from src.mbtaclient.stop import MBTAStop
-from src.mbtaclient.route import MBTARoute
-from src.mbtaclient.alert import MBTAAlert
+from mbtaclient.models.mbta_schedule import MBTASchedule
+from mbtaclient.models.mbta_prediction import MBTAPrediction
+from mbtaclient.models.mbta_stop import MBTAStop
+from mbtaclient.models.mbta_route import MBTARoute
+from mbtaclient.models.mbta_alert import MBTAAlert
 from src.mbtaclient.utils import MBTAUtils
 from src.mbtaclient.journey_stop import JourneyStop
 from tests.mock_data import VALID_ROUTE_RESPONSE_DATA, VALID_SCHEDULE_RESPONSE_DATA, VALID_PREDICTION_RESPONSE_DATA, VALID_STOP_RESPONSE_DATA  # Direct import
