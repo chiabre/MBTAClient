@@ -20,10 +20,25 @@ class MBTASchedule:
 
         # Relationships
         relationships = schedule.get('relationships', {})
-        self.route_id: Optional[str] = relationships.get('route', {}).get('data', {}).get('id', None)
-        self.stop_id: Optional[str] = relationships.get('stop', {}).get('data', {}).get('id', None)
-        self.trip_id: Optional[str] = relationships.get('trip', {}).get('data', {}).get('id', None)
-        self.prediction_id: Optional[str] = relationships.get('prediction', {}).get('data', {}).get('id', None)
+        # Ensure 'data' exists and is not None before accessing it
+        self.vehicle_id: Optional[str] = (
+            relationships.get('vehicle', {}).get('data', None).get('id', None) if relationships.get('vehicle') else None
+        )
+        self.trip_id: Optional[str] = (
+            relationships.get('trip', {}).get('data', {}).get('id', None) if relationships.get('trip') else None
+        )
+        self.stop_id: Optional[str] = (
+            relationships.get('stop', {}).get('data', {}).get('id', None) if relationships.get('stop') else None
+        )
+        self.schedule_id: Optional[str] = (
+            relationships.get('schedule', {}).get('data', {}).get('id', None) if relationships.get('schedule') else None
+        )
+        self.route_id: Optional[str] = (
+            relationships.get('route', {}).get('data', {}).get('id', None) if relationships.get('route') else None
+        )
+        self.alerts_ids: Optional[list[str]] = [
+            alert.get('id', None) for alert in relationships.get('alerts', {}).get('data', [])
+        ]
 
     def __repr__(self) -> str:
         return (f"MBTASchedule(id={self.id}, route_id={self.route_id}, stop_id={self.stop_id})")
