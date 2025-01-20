@@ -32,7 +32,7 @@ class MBTARoute:
             self.description: Optional[str] = attributes.get('description', None)
             self.color: Optional[str] = attributes.get('color', None)
        
-       except Exception as e:
+        except Exception as e:
             # Log the exception with traceback
             logger = logging.getLogger(__name__)
             logger.error(f"Error initializing {self.__class__.__name__}: {e}", exc_info=True)
