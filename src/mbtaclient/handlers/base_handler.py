@@ -1,13 +1,10 @@
 import asyncio
+import logging
+
 from datetime import datetime, timedelta
 from itertools import chain
-import logging
-from abc import ABC, abstractmethod
-
-from typing import Dict, Optional, Tuple, Union
-
-from ..models.mbta_route import MBTARoute
-from ..models.mbta_trip import MBTATrip
+from abc import abstractmethod
+from typing import Optional, Tuple, Union
 
 from ..client.mbta_client import MBTAClient
 from ..trip import Trip
@@ -16,7 +13,7 @@ from ..models.mbta_stop import MBTAStop, MBTAStopError
 from ..models.mbta_schedule import MBTASchedule
 from ..models.mbta_prediction import MBTAPrediction
 from ..models.mbta_alert import MBTAAlert
-
+from ..models.mbta_route import MBTARoute
 
 class MBTABaseHandler:
     

@@ -44,7 +44,7 @@ jobs:
       - name: Type check with mypy
         continue-on-error: true
         run: |
-          mypy . --show-error-codes --no-error-summary >> reports/mypy/index.txt
+          mypy . --show-error-codes >> reports/mypy/index.txt
 
       - name: Run tests with pytest
         run: |
