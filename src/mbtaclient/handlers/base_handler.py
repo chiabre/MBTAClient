@@ -324,12 +324,12 @@ class MBTABaseHandler:
 
         for entity in mbta_alert.informed_entities:
             # Check if the alert affects the trip or route
-            if (entity.get('route_id') == mbta_route_id and entity.get('stop_id') is None) or \
-            (entity.get('trip_id') == trip_id) or \
+            # if (entity.get('route_id') == mbta_route_id and entity.get('stop_id') is None) or \
+            if  (entity.get('trip_id') == trip_id) or \
             (entity.get('stop_id') in mbta_stop_ids):
                 # Verify activities only if the alert affects a specific stop
                 if entity.get('stop_id') in mbta_stop_ids:
-                    if not self.__is_alert_activity_relevant(entity, mbta_stop_ids):
+                    if not self.__is_alert_activity_relevant(entity):
                         continue
                 # If conditions are satisfied, the alert is relevant
                 return True
