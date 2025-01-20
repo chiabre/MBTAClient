@@ -1,12 +1,11 @@
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 class MBTAAlert:
     """An alert object to hold information about an MBTA alert."""
 
     def __init__(self, alert: dict[str, Any]) -> None:
-        # ID & type
+        # ID
         self.id: Optional[str] = alert.get('id', None)
-        self.type: Optional[str] = alert.get('type', None)
 
         # Attributes
         attributes = alert.get('attributes', {})
@@ -20,7 +19,7 @@ class MBTAAlert:
         self.lifecycle: Optional[str] = attributes.get('lifecycle', None)
 
         # Informed Entities
-        self.informed_entities: List[Dict[str, Optional[Any]]] = [
+        self.informed_entities: list[Dict[str, Optional[Any]]] = [
             {
                 "trip_id": entity.get('trip', None),
                 "stop_id": entity.get('stop', None),

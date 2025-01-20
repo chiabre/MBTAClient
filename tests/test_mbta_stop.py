@@ -1,8 +1,8 @@
 import pytest
-from mbtaclient.models.mbta_stop import MBTAStop
+from src.mbtaclient.models.mbta_stop import MBTAStop
 from tests.mock_data import VALID_STOP_RESPONSE_DATA  # Direct import
 
-def test_init():
+def test_mbta_stop_init():
     """Tests that MBTAStop is initialized correctly with the stop data."""
     
     # Directly use VALID_STOP_RESPONSE_DATA as the stop_data

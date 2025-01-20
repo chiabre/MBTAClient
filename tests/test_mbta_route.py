@@ -1,8 +1,8 @@
 import pytest
-from mbtaclient.models.mbta_route import MBTARoute
+from src.mbtaclient.models.mbta_route import MBTARoute
 from tests.mock_data import VALID_ROUTE_RESPONSE_DATA  # Direct import
 
-def test_init():
+def test_mbts_route_init():
     """Tests that MBTARoute is initialized correctly with the route data."""
     
     # Directly use VALID_ROUTE_RESPONSE_DATA as the route_data

@@ -1,10 +1,10 @@
 import pytest
 from typing import Dict
 
-from mbtaclient.models.mbta_schedule import MBTASchedule
+from src.mbtaclient.models.mbta_schedule import MBTASchedule
 from tests.mock_data import VALID_SCHEDULE_RESPONSE_DATA  # Direct import
 
-def test_init():
+def test_mbta_schedule_init():
     """Tests that MBTASchedule is initialized correctly with or without data."""
     
     schedule = MBTASchedule(VALID_SCHEDULE_RESPONSE_DATA)

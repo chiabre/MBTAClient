@@ -4,7 +4,7 @@ from typing import Optional
 import aiohttp
 
 MAX_CONCURRENT_REQUESTS = 10
-REQUEST_TIMEOUT = 5
+REQUEST_TIMEOUT = 10
 
 class MBTASessionManager:
     """Singleton class to manage a shared aiohttp.ClientSession."""

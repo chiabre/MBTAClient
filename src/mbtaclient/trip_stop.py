@@ -9,22 +9,10 @@ class StopType(Enum):
     ARRIVAL = 'arrival'
     
 class TripStop:
-
-
     """A trip stop object to hold and manage arrival and departure details."""
 
-    def __init__(
-        self, 
-        stop_type: str, 
-        mbta_stop: MBTAStop, 
-        arrival_time: str, 
-        departure_time: str, 
-        stop_sequence: int, 
-        status: str
-    ) -> None:
-        if stop_type not in StopType:
-                    raise ValueError(f"Invalid stop_type: {stop_type}. Must be one of {[StopType]}.")
-
+    def __init__(self, stop_type: StopType, mbta_stop: MBTAStop, arrival_time: str, departure_time: str, stop_sequence: int, ) -> None:
+        
         self.stop_type = stop_type
         self.mbta_stop: MBTAStop = mbta_stop
 
@@ -36,29 +24,15 @@ class TripStop:
         self.real_departure_time = None
         self.departure_delay = None
 
-        self.status = status
         self.stop_sequence = stop_sequence
 
     def __repr__(self) -> str:
         return f"TripStop({self.mbta_stop.name})"
-
-    @property
-    def time(self) ->  Optional[datetime]:
-        """Return the most relevant time for the stop."""
-        return self.get_time()
     
-    def update_stop(
-        self, 
-        mbta_stop: MBTAStop, 
-        arrival_time: str, 
-        departure_time: str, 
-        stop_sequence: str, 
-        status: str
-    ) -> None:
+    def update_stop(self, mbta_stop: MBTAStop, arrival_time: str, departure_time: str, stop_sequence: str, ) -> None:
         """Update the stop details, including real arrival and departure times, uncertainties, and delays."""
         self.mbta_stop = mbta_stop
         self.stop_sequence = stop_sequence
-        self.status = status
 
         if arrival_time is None and departure_time is None:
             self.arrival_time = None

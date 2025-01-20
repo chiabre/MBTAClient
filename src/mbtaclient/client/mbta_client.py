@@ -63,6 +63,10 @@ class MBTAClient:
                     
         self._logger.debug("MBTAClient initialized")
 
+    def __repr__(self) -> str:
+        return (f"MBTAClient(own_cache={self._own_cache})"
+        )
+        
     async def __aenter__(self):
         """Enter the context and prepare the session."""
         await MBTASessionManager.get_session()
@@ -142,6 +146,9 @@ class MBTAClient:
                 self._cache_manager.server_cache_miss += 1
                 return data, timestamp
 
+        except TimeoutError as error:
+            self._logger.error(f"Timeout during request to {url}: {error}")
+            raise TimeoutError
         except Exception as error:
             self._logger.error(f"Error during request to {url}: {error}")
             raise MBTAClientError("Unexpected error during request.") from error

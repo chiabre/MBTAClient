@@ -8,7 +8,7 @@ from functools import wraps
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_MAX_CACHE_SIZE = 100
+DEFAULT_MAX_CACHE_SIZE = 256
 
 class MBTACacheManager:
     """
@@ -107,16 +107,19 @@ class MBTACacheManager:
     def print_stats(self):
         self._logger.info("MBTACaches stats:")
         client_cache_access = self._client_cache_hit + self._client_cache_miss
-        client_cache_hit_rate = int(round((self._client_cache_hit/client_cache_access)*100,0))
-        self._logger.info(f"Client cache: {client_cache_access} acccess, {client_cache_hit_rate}% hit rate, {self._client_cache_eviction} evictions ")
+        if client_cache_access > 0:
+            client_cache_hit_rate = int(round((self._client_cache_hit/client_cache_access)*100,0))
+            self._logger.info(f"Client cache: {client_cache_access} acccess, {client_cache_hit_rate}% hit rate, {self._client_cache_eviction} evictions ")
         server_cache_access = self.server_cache_hit + self.server_cache_miss
-        server_cache_hit_rate = int(round((self.server_cache_hit/server_cache_access)*100,0))
-        self._logger.info(f"Server cache: {server_cache_access} acccess, {server_cache_hit_rate}% hit rate, {self._server_cache_eviction} evictions ")  
+        if server_cache_access > 0:
+            server_cache_hit_rate = int(round((self.server_cache_hit/server_cache_access)*100,0))
+            self._logger.info(f"Server cache: {server_cache_access} acccess, {server_cache_hit_rate}% hit rate, {self._server_cache_eviction} evictions ")  
         total_cache_access = client_cache_access + server_cache_access
-        total_cache_hit = self._client_cache_hit + self.server_cache_hit
-        total_cache_hit_rate = int(round((total_cache_hit/total_cache_access)*100,0))
-        tota_cache_evictions = self._client_cache_eviction + self._server_cache_eviction
-        self._logger.info(f"Cache: {total_cache_access} total acccess, {total_cache_hit_rate}% hit rate, {tota_cache_evictions} total evictions ")  
+        if total_cache_access > 0:
+            total_cache_hit = self._client_cache_hit + self.server_cache_hit
+            total_cache_hit_rate = int(round((total_cache_hit/total_cache_access)*100,0))
+            tota_cache_evictions = self._client_cache_eviction + self._server_cache_eviction
+            self._logger.info(f"Cache: {total_cache_access} total acccess, {total_cache_hit_rate}% hit rate, {tota_cache_evictions} total evictions ")  
 
     
     def cleanup(self):

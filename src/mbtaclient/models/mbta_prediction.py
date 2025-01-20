@@ -26,7 +26,7 @@ class MBTAPrediction:
             relationships: dict = prediction.get('relationships', {})
             # Ensure 'data' exists and is not None before accessing it
             self.vehicle_id: Optional[str] = (
-                relationships.get('vehicle', {}).get('data', None) if relationships.get('vehicle') else None
+                relationships.get('vehicle', {}).get('data', None).get('id', None) if relationships.get('vehicle') else None
             )
             self.trip_id: Optional[str] = (
                 relationships.get('trip', {}).get('data', {}).get('id', None) if relationships.get('trip') else None

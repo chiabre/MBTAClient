@@ -1,6 +1,7 @@
 
 import logging
-from mbtaclient.handlers.train_trip_handler import TrainTripHandler
+from mbtaclient.handlers.timetable_handler import TimetableHandler
+from mbtaclient.handlers.trains_handler import TrainsHandler
 from mbtaclient.handlers.trips_handler import TripsHandler
 from mbtaclient.trip import Trip
 from mbtaclient.client.mbta_client import MBTAClient
@@ -47,106 +48,13 @@ MAX_JOURNEYS = 10
 # DEPART_FROM = 'Pemberton Point'
 # ARRIVE_AT = 'Summer St from Cushing Way to Water St (FLAG)'
 
-TRIP = '533'
+TRIP = '509'
 DEPART_FROM = 'South Station'
 ARRIVE_AT = 'West Natick'
 
 # DEPART_FROM = 'South Station'
 # ARRIVE_AT = 'West Natick'
-
-def print_journey(trip: Trip):
-    route_type = trip.route_type
-
-    # if subway, ferry, or similar
-    if route_type in [0, 1, 4]:
-        _LOGGER.info("###########")
-        _LOGGER.info("Line: %s", trip.route_long_name)
-        _LOGGER.info("Type: %s", trip.route_description)
-        _LOGGER.info("Color: %s", trip.route_color)
-        _LOGGER.info("**********")
-        _LOGGER.info("Direction: %s to %s", trip.direction, trip.destination)
-        _LOGGER.info("Destination: %s", trip.headsign)
-        _LOGGER.info("Duration: %s", trip.duration)
-        _LOGGER.info("**********")
-        _LOGGER.info("Departure Station: %s", trip.departure_stop_name)
-        _LOGGER.info("Departure Platform: %s", trip.departure_platform_name)
-        _LOGGER.info("Departure Time: %s", trip.departure_time)
-        _LOGGER.info("Departure Delay: %s", trip.departure_delay)
-        _LOGGER.info("Departure Time To: %s", trip.departure_time_to)
-        _LOGGER.info("Departure Status: %s", trip.departure_status)
-        _LOGGER.info("**********")
-        _LOGGER.info("Arrival Station: %s", trip.arrival_stop_name)
-        _LOGGER.info("Arrival Platform: %s", trip.arrival_platform_name)
-        _LOGGER.info("Arrival Time: %s", trip.arrival_time)
-        _LOGGER.info("Arrival Delay: %s", trip.arrival_delay)
-        _LOGGER.info("Arrival Time To: %s", trip.arrival_time_to)
-        _LOGGER.info("Arrival Status: %s", trip.arrival_status)
-        _LOGGER.info("**********")
-        for alert in trip.mbta_alerts:
-            _LOGGER.info("$$$$$$$$$$$$$")
-            _LOGGER.info("Alert header: %s", alert.header)
-            _LOGGER.info("$$$$$$$$$$$$$")
-    elif route_type == 2:
-        _LOGGER.info("###########")
-        _LOGGER.info("Line: %s", trip.route_long_name)
-        _LOGGER.info("Type: %s", trip.route_description)
-        _LOGGER.info("Color: %s", trip.route_color)
-        _LOGGER.info("Train Number: %s", trip.mbta_trip.name)
-        _LOGGER.info("**********")
-        _LOGGER.info("Direction: %s to %s", trip.direction, trip.destination)
-        _LOGGER.info("Destination: %s", trip.headsign)
-        _LOGGER.info("Duration: %s", trip.duration)
-        _LOGGER.info("**********")
-        _LOGGER.info("Departure Station: %s", trip.departure_stop_name)
-        _LOGGER.info("Departure Platform: %s", trip.departure_platform_name)
-        _LOGGER.info("Departure Time: %s", trip.departure_time)
-        _LOGGER.info("Departure Delay: %s", trip.departure_delay)
-        _LOGGER.info("Departure Time To: %s", trip.departure_time_to)
-        _LOGGER.info("Departure Status: %s", trip.departure_status)
-        _LOGGER.info("**********")
-        _LOGGER.info("Arrival Station: %s", trip.arrival_stop_name)
-        _LOGGER.info("Arrival Platform: %s", trip.arrival_platform_name)
-        _LOGGER.info("Arrival Time: %s", trip.arrival_time)
-        _LOGGER.info("Arrival Delay: %s", trip.arrival_delay)
-        _LOGGER.info("Arrival Time To: %s", trip.arrival_time_to)
-        _LOGGER.info("Arrival Status: %s", trip.arrival_status)
-        _LOGGER.info("**********")
-        for alert in trip.mbta_alerts:
-            _LOGGER.info("$$$$$$$$$$$$$")
-            _LOGGER.info("Alert header: %s", alert.header)
-            _LOGGER.info("$$$$$$$$$$$$$")
-
-    # if bus
-    elif route_type == 3:
-        _LOGGER.info("###########")
-        _LOGGER.info("Line: %s", trip.route_short_name)
-        _LOGGER.info("Type: %s", trip.route_description)
-        _LOGGER.info("Color: %s", trip.route_color)
-        _LOGGER.info("**********")
-        _LOGGER.info("Direction: %s to %s", trip.direction, trip.destination)
-        _LOGGER.info("Destination: %s", trip.headsign)
-        _LOGGER.info("Duration: %s", trip.duration)
-        _LOGGER.info("**********")
-        _LOGGER.info("Departure Stop: %s", trip.departure_stop_name)
-        _LOGGER.info("Departure Time: %s", trip.departure_time)
-        _LOGGER.info("Departure Delay: %s", trip.departure_delay)
-        _LOGGER.info("Departure Time To: %s", trip.departure_time_to)
-        _LOGGER.info("Departure Status: %s", trip.departure_status)
-        _LOGGER.info("**********")
-        _LOGGER.info("Arrival Stop: %s", trip.arrival_stop_name)
-        _LOGGER.info("Arrival Time: %s", trip.arrival_time)
-        _LOGGER.info("Arrival Delay: %s", trip.arrival_delay)
-        _LOGGER.info("Arrival Time To: %s", trip.arrival_time_to)
-        _LOGGER.info("Arrival Status: %s", trip.arrival_status)
-        _LOGGER.info("**********")
-        for alert in trip.mbta_alerts:
-            _LOGGER.info("$$$$$$$$$$$$$")
-            _LOGGER.info("Alert header: %s", alert.header)
-            _LOGGER.info("$$$$$$$$$$$$$")
-    else:
-        _LOGGER.error("Unknown route type: %s", route_type)
-
-                
+              
                 
 async def main():
     #async with aiohttp.ClientSession() as session:
@@ -167,14 +75,47 @@ async def main():
             
         cache_manger = MBTACacheManager()
         async with MBTAClient(cache_manager=cache_manger,api_key=API_KEY) as mbta_client:
-            trips_handler = await TripsHandler.create(depart_from_name="Copley", arrive_at_name="Park Street", max_trips=MAX_JOURNEYS, mbta_client=mbta_client)
-            trips3: list[Trip] = await trips_handler.update()
-            trips_handler2 = await TripsHandler.create(depart_from_name="South Station", arrive_at_name="West Natick", max_trips=MAX_JOURNEYS, mbta_client=mbta_client)
-            trips4: list[Trip] = await trips_handler2.update() 
-            train_trip_handler = await TrainTripHandler.create(depart_from_name=DEPART_FROM, arrive_at_name=ARRIVE_AT, train_name=TRIP, mbta_client=mbta_client)               
-            trip: list[Trip] = await train_trip_handler.update()
-            train_trip_handler2 = await TrainTripHandler.create(depart_from_name=ARRIVE_AT, arrive_at_name=DEPART_FROM, train_name='530', mbta_client=mbta_client)               
-            trip2: list[Trip] = await train_trip_handler2.update()
+            handlerA = await TimetableHandler.create(stop_name="South Station", route_ids=['Red'], mbta_client=mbta_client, departures=True)
+            AA = await handlerA.update()
+            AA = await handlerA.update()
+            AA = await handlerA.update()
+            for A in AA:
+                print(f"{A.route_name} | {A.headsign} | {A.departure_time} | {A.departure_status} | {A.departure_delay} ")
+            print("$$$$$$$$$$$$$$$")
+            print("$$$$$$$$$$$$$$$")
+            handlerA = await TimetableHandler.create(stop_name="South Station", route_ids=None, mbta_client=mbta_client, departures=False)
+            AA = await handlerA.update()
+            AA = await handlerA.update()
+            AA = await handlerA.update()
+            for A in AA:
+                print(f"{A.route_name} | {A.headsign} | {A.arrival_time} | {A.arrival_status} | {A.arrival_delay} ")
+            print("$$$$$$$$$$$$$$$")
+            print("$$$$$$$$$$$$$$$")
+            handlerB = await TrainsHandler.create(departure_stop_name=DEPART_FROM, arrival_stop_name=ARRIVE_AT, trips_names=[TRIP], mbta_client=mbta_client)
+            BB = await handlerB.update()
+            BB = await handlerB.update()
+            BB = await handlerB.update()
+            for B in BB:
+                print(f"{B.name} | {B.route_name} | {B.headsign} | {B.departure_time} | {B.departure_status} | {B.departure_delay} | {B.arrival_time} | {B.arrival_status} | {B.arrival_delay}")
+            print("$$$$$$$$$$$$$$$")
+            print("$$$$$$$$$$$$$$$")
+            handlerC = await TripsHandler.create(departure_stop_name="Back Bay", arrival_stop_name="South Station", max_trips=MAX_JOURNEYS, mbta_client=mbta_client)
+            CC = await handlerC.update()
+            CC = await handlerC.update()
+            CC = await handlerC.update()
+            for C in CC:
+                print(f"{C.route_name} | {C.headsign} | {C.departure_time} | {C.departure_status} | {C.departure_delay} | {C.arrival_time} | {C.arrival_status} | {C.arrival_delay}")   
+ 
+            # trips = await trips_handler.update()
+            # trips = await trips_handler.update()
+            # trips_handler = await TripsHandler.create(depart_from_name="Copley", arrive_at_name="Park Street", max_trips=MAX_JOURNEYS, mbta_client=mbta_client)
+            # trips3: list[Trip] = await trips_handler.update()
+            # trips_handler2 = await TripsHandler.create(depart_from_name="South Station", arrive_at_name="West Natick", max_trips=MAX_JOURNEYS, mbta_client=mbta_client)
+            # trips4: list[Trip] = await trips_handler2.update() 
+            # train_trip_handler = await TrainTripHandler.create(depart_from_name=DEPART_FROM, arrive_at_name=, train_name=TRIP, mbta_client=mbta_client)               
+            # trip: list[Trip] = await train_trip_handler.update()
+            # train_trip_handler2 = await TrainTripHandler.create(depart_from_name=ARRIVE_AT, arrive_at_name=DEPART_FROM, train_name='586', mbta_client=mbta_client)               
+            # trip2: list[Trip] = await train_trip_handler2.update()
             # for tri1 in trips1:
             #     print_journey(tri1)   
             # for tri2 in trips2:
@@ -201,10 +142,10 @@ async def main():
             #     print_journey(tri3)
             # for tri4 in trips4:
             #     print_journey(tri4)
-            for tri1 in trip:
-                print_journey(tri1)
-            for tri2 in trip2:
-                print_journey(tri2)
+            # for tri1 in trips:
+            #     print_journey(tri1)
+            # for tri2 in trip2:
+            #     print_journey(tri2)
             #stops_handler = await MBTAStopsHandler.create(stop_name=DEPART_FROM, client=mbta_client)
             
         cache_manger.cleanup()        
