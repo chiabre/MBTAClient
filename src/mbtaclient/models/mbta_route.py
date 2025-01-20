@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Optional
 
 class MBTARoute:
@@ -14,22 +15,30 @@ class MBTARoute:
     }
     
     def __init__(self, route: dict[ str, Any]) -> None:
-        # ID
-        self.id:  Optional[str] = route.get('id', None)
+        try:
+            # ID
+            self.id:  Optional[str] = route.get('id', None)
+            
+            # Attributes
+            attributes = route.get('attributes', {})
+            self.type: Optional[str] = attributes.get('type', None)
+            self.text_color: Optional[str] = attributes.get('text_color', None)
+            self.sort_order: Optional[int] = attributes.get('sort_order', None)
+            self.short_name: Optional[str] = attributes.get('short_name', None)
+            self.long_name: Optional[str] = attributes.get('long_name', None)
+            self.fare_class: Optional[str] = attributes.get('fare_class', None)
+            self.direction_names: list[Optional[str]] = attributes.get('direction_names', [])
+            self.direction_destinations: list[Optional[str]] = attributes.get('direction_destinations', [])
+            self.description: Optional[str] = attributes.get('description', None)
+            self.color: Optional[str] = attributes.get('color', None)
+       
+        except Exception as e:
+            # Log the exception with traceback
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error initializing {self.__class__.__name__}: {e}", exc_info=True)
+            # Re-raise the exception if needed or handle accordingly
+            raise
         
-        # Attributes
-        attributes = route.get('attributes', {})
-        self.type: Optional[str] = attributes.get('type', None)
-        self.text_color: Optional[str] = attributes.get('text_color', None)
-        self.sort_order: Optional[int] = attributes.get('sort_order', None)
-        self.short_name: Optional[str] = attributes.get('short_name', None)
-        self.long_name: Optional[str] = attributes.get('long_name', None)
-        self.fare_class: Optional[str] = attributes.get('fare_class', None)
-        self.direction_names: list[Optional[str]] = attributes.get('direction_names', [])
-        self.direction_destinations: list[Optional[str]] = attributes.get('direction_destinations', [])
-        self.description: Optional[str] = attributes.get('description', None)
-        self.color: Optional[str] = attributes.get('color', None)
-
     def __repr__(self) ->  Optional[str]:
         return (f"MBTAroute(id={self.id}, long_name={self.long_name})")
 

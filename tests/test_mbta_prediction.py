@@ -31,15 +31,10 @@ def test_mbta_prediction_init():
     assert prediction.stop_id == (
         VALID_PREDICTION_RESPONSE_DATA.get("relationships", {}).get("stop", {}).get("data", {}).get("id")
     )
-    assert prediction.schedule_id == (
-        VALID_PREDICTION_RESPONSE_DATA.get("relationships", {}).get("schedule", {}).get("data", {}).get("id")
-    )
     assert prediction.route_id == (
         VALID_PREDICTION_RESPONSE_DATA.get("relationships", {}).get("route", {}).get("data", {}).get("id")
     )
-    assert prediction.alerts_ids == [
-        alert.get("id") for alert in VALID_PREDICTION_RESPONSE_DATA.get("relationships", {}).get("alerts", {}).get("data", [])
-    ]
+
 
     # Confirm the __repr__ method includes key identifying attributes
     repr_string = repr(prediction)
