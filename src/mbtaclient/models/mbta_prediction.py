@@ -37,7 +37,7 @@ class MBTAPrediction:
             self.route_id: Optional[str] = (
                 relationships.get('route', {}).get('data', {}).get('id', None) if (relationships.get('route') and relationships.get('route').get('data')) else None
             )
-      
+
         except Exception as e:
             # Log the exception with traceback
             logger = logging.getLogger(__name__)
