@@ -164,8 +164,16 @@ class Trip:
         return self.mbta_vehicle.occupancy_status if self.mbta_vehicle else None
 
     @property
-    def vehicle_updated_at(self) -> Optional[datetime]:
-        return self.mbta_vehicle.updated_at if self.mbta_vehicle else None
+    def vehicle_last_update_datetime(self) -> Optional[datetime]:
+        return TripStop.parse_datetime(self.mbta_vehicle.updated_at) if self.mbta_vehicle else None
+    
+    @property
+    def vehicle_last_update(self) -> Optional[int]:
+        now = datetime.now().astimezone()
+        if self.mbta_vehicle:
+            return TripStop.time_to(now, TripStop.parse_datetime(self.mbta_vehicle.updated_at))
+        else: 
+            return None
  
     @property
     def departure_stop_name(self) -> Optional[str]:
