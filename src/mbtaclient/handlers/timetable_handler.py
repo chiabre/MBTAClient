@@ -51,7 +51,7 @@ class TimetableHandler(MBTABaseHandler):
                 self._trips = super()._sort_trips(StopType.ARRIVAL)   
         
             
-            return self._trips.values()
+            return list[self._trips.values()]
             
         except Exception as e:
             self._logger.error(f"Error updating trips: {e}")

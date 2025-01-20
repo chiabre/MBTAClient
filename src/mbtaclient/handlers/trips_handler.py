@@ -47,7 +47,7 @@ class TripsHandler(MBTABaseHandler):
                 await super()._set_mbta_trip(trip_id)
                 await super()._update_trip_info(trip)
             
-            return self._trips.values()
+            return list[self._trips.values()]
             
         except Exception as e:
             self._logger.error(f"Error updating trips scheduling and info: {e}")
