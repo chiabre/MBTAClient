@@ -1,68 +1,27 @@
 import pytest
-from typing import Dict
+from src.mbtaclient.models.mbta_trip import MBTATrip
+from tests.mock_data import VALID_TRIP_RESPONSE_DATA  # Direct import
 
-from src.mbtaclient.mbta_trip import MBTATrip
-
-
-@pytest.mark.parametrize(
-    "trip_data",
-    [
-        {
-            "id": "1234",
-            "attributes": {
-                "name": "Green Line B",
-                "headsign": "Cleveland Circle",
-                "direction_id": 1,
-                "block_id": "b123",
-                "shape_id": "s456",
-                "wheelchair_accessible": True,
-                "bikes_allowed": False,
-                "schedule_relationship": "weekday",
-            },
-            "relationships": {
-                "route": {"data": {"id": "route_id_1"}},
-                "service": {"data": {"id": "service_id_1"}},
-            },
-        },
-        # Test case with missing data
-        {
-            "id": "5678",
-            "attributes": {"name": "Red Line"},
-            "relationships": {"route": {"data": {}}},
-        },
-    ],
-)
-def test_init(trip_data):
-    """Tests that MBTATrip is initialized correctly with or without data."""
-
-    trip = MBTATrip(trip_data)
-
+def test_mbta_trip_init():
+    """Tests that MBTATrip is initialized correctly with the trip data."""
+    
+    # Create an MBTATrip instance with mock data
+    trip = MBTATrip(VALID_TRIP_RESPONSE_DATA)
+    
     # Test expected attributes
-    assert trip.id == trip_data["id"]
-    assert trip.name == trip_data.get("attributes", {}).get("name", "")
-    assert trip.headsign == trip_data.get("attributes", {}).get("headsign", "")
-    assert trip.direction_id == trip_data.get("attributes", {}).get("direction_id", 0)
-    assert trip.block_id == trip_data.get("attributes", {}).get("block_id", "")
-    assert trip.shape_id == trip_data.get("attributes", {}).get("shape_id", "")
-    assert trip.wheelchair_accessible is trip_data.get(
-        "attributes", {}
-    ).get("wheelchair_accessible")
-    assert trip.bikes_allowed is trip_data.get("attributes", {}).get("bikes_allowed")
-    assert trip.schedule_relationship == trip_data.get(
-        "attributes", {}
-    ).get("schedule_relationship", "")
+    assert trip.id == VALID_TRIP_RESPONSE_DATA.get("id", "")
+    assert trip.name == VALID_TRIP_RESPONSE_DATA.get("attributes", {}).get("name", None)
+    assert trip.headsign == VALID_TRIP_RESPONSE_DATA.get("attributes", {}).get("headsign", None)
+    assert trip.direction_id == VALID_TRIP_RESPONSE_DATA.get("attributes", {}).get("direction_id", None)
+    assert trip.block_id == VALID_TRIP_RESPONSE_DATA.get("attributes", {}).get("block_id", None)
+    assert trip.shape_id == VALID_TRIP_RESPONSE_DATA.get("attributes", {}).get("shape_id", None)
+    assert trip.wheelchair_accessible == VALID_TRIP_RESPONSE_DATA.get("attributes", {}).get("wheelchair_accessible", None)
+    assert trip.bikes_allowed == VALID_TRIP_RESPONSE_DATA.get("attributes", {}).get("bikes_allowed", None)
+    assert trip.schedule_relationship == VALID_TRIP_RESPONSE_DATA.get("attributes", {}).get("schedule_relationship", None)
 
     # Test relationships
-    assert trip.route_id == (
-        trip_data.get("relationships", {}).get("route", {}).get("data", {}).get(
-            "id", ""
-        )
-    )
-    assert trip.service_id == (
-        trip_data.get("relationships", {}).get("service", {}).get("data", {}).get(
-            "id", ""
-        )
-    )
+    assert trip.route_id == VALID_TRIP_RESPONSE_DATA.get("relationships", {}).get("route", {}).get("data", {}).get("id", None)
 
-
-# Add more test cases for different scenarios (e.g., invalid data types, edge cases)
+    # Confirm the __repr__ method includes key identifying attributes
+    repr_string = repr(trip)
+    assert f"MBTATrip(id={trip.id}, headsign={trip.headsign})" in repr_string

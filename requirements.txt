@@ -1,4 +1,5 @@
 aiohttp
+yarl
 pytest
 pytest-cov
 pytest-asyncio

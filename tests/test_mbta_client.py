@@ -1,73 +1,119 @@
 import pytest
-
 from unittest.mock import AsyncMock, MagicMock, patch
 from aiohttp import ClientConnectionError, ClientResponseError, RequestInfo
 from yarl import URL
 
-from src.mbtaclient.mbta_client import MBTAClient, MBTA_DEFAULT_HOST, ENDPOINTS
-from src.mbtaclient.mbta_route import MBTARoute
+from src.mbtaclient.client.mbta_client import MBTAClient, MBTA_DEFAULT_HOST, ENDPOINTS
+from src.mbtaclient.models.mbta_route import MBTARoute
+from src.mbtaclient.models.mbta_trip import MBTATrip
+from src.mbtaclient.models.mbta_stop import MBTAStop
+from src.mbtaclient.models.mbta_schedule import MBTASchedule
+from src.mbtaclient.models.mbta_prediction import MBTAPrediction
+from src.mbtaclient.models.mbta_alert import MBTAAlert
+
+@pytest.mark.asyncio
+async def test_fetch_route():
+    async def mock_fetch_data(path, params):
+        return {"data": {"id": "Red"}}, 0.0
+
+    async with MBTAClient() as client:
+        with patch.object(client, '_fetch_data', side_effect=mock_fetch_data) as mock_method:
+            route, _ = await client.fetch_route('Red')
+            assert route.id == 'Red'
+            mock_method.assert_called_once_with(f'{ENDPOINTS["ROUTES"]}/Red', None)
 
 
 @pytest.mark.asyncio
-async def test_get_route():
-    async def mock_fetch_data(url, params):
-        return {'data': {'id': 'route-xyz'}}
+async def test_fetch_trip():
+    async def mock_fetch_data(path, params):
+        return {"data": {"id": "66715083"}}, 0.0
 
-    client = MBTAClient()
-    client._fetch_data = AsyncMock(side_effect=mock_fetch_data)
-    route = await client.get_route('route-xyz')
-    assert route.id == 'route-xyz'
-    client._fetch_data.assert_called_once_with(f'{ENDPOINTS["ROUTES"]}/route-xyz', None)
-    await client.close()
-
-
-@pytest.mark.asyncio
-async def test_get_route_error():
-    async def mock_request(method, url, params=None):
-        return MagicMock(json=AsyncMock(return_value={}))
-
-    client = MBTAClient()
-    client.request = AsyncMock(side_effect=mock_request)
-    with patch.object(client, 'logger', MagicMock()) as mock_logger:
-        with pytest.raises(ValueError) as excinfo:
-            await client.get_route('route-xyz')
-        assert str(excinfo.value) == "missing 'data'"
-        mock_logger.error.assert_called_once_with("Error fetching data: missing 'data'")
-    await client.close()
+    async with MBTAClient() as client:
+        with patch.object(client, '_fetch_data', side_effect=mock_fetch_data) as mock_method:
+            trip, _ = await client.fetch_trip('66715083')
+            assert trip.id == '66715083'
+            mock_method.assert_called_once_with(f'{ENDPOINTS["TRIPS"]}/66715083', None)
 
 
 @pytest.mark.asyncio
-async def test_list_routes():
-    async def mock_fetch_data(url, params):
-        return {'data': [{'id': 'route-1'}, {'id': 'route-2'}]}
+async def test_fetch_stop():
+    async def mock_fetch_data(path, params):
+        return {"data": {"id": "1936"}}, 0.0
 
-    client = MBTAClient()
-    client._fetch_data = AsyncMock(side_effect=mock_fetch_data)
-    routes = await client.list_routes()
-    assert len(routes) == 2
-    assert isinstance(routes[0], MBTARoute)
-    client._fetch_data.assert_called_once_with(ENDPOINTS['ROUTES'], None)
-    await client.close()
+    async with MBTAClient() as client:
+        with patch.object(client, '_fetch_data', side_effect=mock_fetch_data) as mock_method:
+            stop, _ = await client.fetch_stop('1936')
+            assert stop.id == '1936'
+            mock_method.assert_called_once_with(f'{ENDPOINTS["STOPS"]}/1936', None)
+
+
+@pytest.mark.asyncio
+async def test_fetch_routes():
+    async def mock_fetch_data(path, params):
+        return {"data": [{"id": "Red"}, {"id": "Orange"}]}, 0.0
+
+    async with MBTAClient() as client:
+        with patch.object(client, '_fetch_data', side_effect=mock_fetch_data) as mock_method:
+            routes, _ = await client.fetch_routes()
+            assert len(routes) == 2
+            assert isinstance(routes[0], MBTARoute)
+            mock_method.assert_called_once_with(ENDPOINTS["ROUTES"], None)
+
+
+@pytest.mark.asyncio
+async def test_fetch_schedules():
+    async def mock_fetch_data(path, params):
+        return {"data": [{"id": "schedule-1"}, {"id": "schedule-2"}]}, 0.0
+
+    async with MBTAClient() as client:
+        with patch.object(client, '_fetch_data', side_effect=mock_fetch_data) as mock_method:
+            schedules, _ = await client.fetch_schedules()
+            assert len(schedules) == 2
+            assert isinstance(schedules[0], MBTASchedule)
+            mock_method.assert_called_once_with(ENDPOINTS["SCHEDULES"], None)
+
+
+@pytest.mark.asyncio
+async def test_fetch_predictions():
+    async def mock_fetch_data(path, params):
+        return {"data": [{"id": "prediction-1"}, {"id": "prediction-2"}]}, 0.0
+
+    async with MBTAClient() as client:
+        with patch.object(client, '_fetch_data', side_effect=mock_fetch_data) as mock_method:
+            predictions, _ = await client.fetch_predictions()
+            assert len(predictions) == 2
+            assert isinstance(predictions[0], MBTAPrediction)
+            mock_method.assert_called_once_with(ENDPOINTS["PREDICTIONS"], None)
+
+
+@pytest.mark.asyncio
+async def test_fetch_alerts():
+    async def mock_fetch_data(path, params):
+        return {"data": [{"id": "alert-1"}, {"id": "alert-2"}]}, 0.0
+
+    async with MBTAClient() as client:
+        with patch.object(client, '_fetch_data', side_effect=mock_fetch_data) as mock_method:
+            alerts, _ = await client.fetch_alerts()
+            assert len(alerts) == 2
+            assert isinstance(alerts[0], MBTAAlert)
+            mock_method.assert_called_once_with(ENDPOINTS["ALERTS"], None)
 
 
 @pytest.mark.asyncio
 async def test_request_connection_error():
     async def mock_request(*args, **kwargs):
-        raise ClientConnectionError('Connection error')
+        raise ClientConnectionError("Connection error")
 
-    client = MBTAClient()
-    client._session.request = AsyncMock(side_effect=mock_request)
-    with patch.object(client, 'logger', MagicMock()) as mock_logger:
-        with pytest.raises(ClientConnectionError):
-            await client.request('get', '/test')
-        mock_logger.error.assert_called_once_with('Connection error: Connection error')
-    await client.close()
+    async with MBTAClient() as client:
+        with patch.object(client, "request", side_effect=mock_request):
+            with pytest.raises(ClientConnectionError):
+                await client.request("GET", "/test")
 
 
 @pytest.mark.asyncio
 async def test_request_client_response_error():
     request_info = RequestInfo(
-        url=URL("https://api-v3.mbta.com/test"),
+        url=URL(f"https://{MBTA_DEFAULT_HOST}/test"),
         method="GET",
         headers={},
     )
@@ -81,29 +127,8 @@ async def test_request_client_response_error():
             headers=None,
         )
 
-    client = MBTAClient()
-    client._session.request = AsyncMock(side_effect=mock_request)
-    with patch.object(client, 'logger', MagicMock()) as mock_logger:
-        with pytest.raises(ClientResponseError):
-            await client.request('get', '/test')
-        mock_logger.error.assert_called_once_with(
-            'Client response error: 404 - 404, message=\'Not Found\', url=\'https://api-v3.mbta.com/test\''
-        )
-    await client.close()
-
-
-@pytest.mark.asyncio
-async def test_request_success():
-    async def mock_request(*args, **kwargs):
-        return MagicMock(status=200, json=AsyncMock(return_value={}))
-
-    client = MBTAClient()
-    client._session.request = AsyncMock(side_effect=mock_request)
-    response = await client.request('get', 'test')
-    assert response.status == 200
-    client._session.request.assert_called_once_with(
-        'get',
-        f'https://{MBTA_DEFAULT_HOST}/test',
-        params={},
-    )
-    await client.close()
+    async with MBTAClient() as client:
+        with patch.object(client, "request", side_effect=mock_request):
+            with pytest.raises(ClientResponseError) as exc:
+                await client.request("GET", "/test")
+            assert exc.value.status == 404

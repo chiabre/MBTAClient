@@ -1,31 +1,31 @@
-# mbtaclient/__init__.py
-
-
-from .journey_stop import JourneyStop
-from .journey import Journey
-from .journeys_handler import JourneysHandler
-from .mbta_alert import MBTAAlert
-from .mbta_client import MBTAClient
-from .mbta_prediction import MBTAPrediction
-from .mbta_route import MBTARoute
-from .mbta_schedule import MBTASchedule
-from .mbta_stop import MBTAStop
-from .mbta_trip import MBTATrip
-from .trip_handler import TripHandler
-from .__version__ import __version__
+from .models.mbta_alert import MBTAAlert
+from .models.mbta_prediction import MBTAPrediction
+from .models.mbta_route import MBTARoute
+from .models.mbta_schedule import MBTASchedule
+from .models.mbta_stop import MBTAStop
+from .models.mbta_trip import MBTATrip
+from .models.mbta_vehicle import MBTAVehicle
+from .client.mbta_client import MBTAClient
+from .trip import Trip
+from .trip_stop import TripStop
+from .handlers.trips_handler import TripsHandler
+from .handlers.trains_handler import TrainsHandler
+from .handlers.timetable_handler import TimetableHandler
 
 __all__ = [
-    "JourneyStop",
-    "Journey",
-    "JourneysHandler",
     "MBTAAlert",
-    "MBTAClient",
-    "MBTARoute",
-    "MBTATrip",
-    "MBTAStop",
-    "MBTASchedule",
     "MBTAPrediction",
-    "TripHandler",
+    "MBTARoute",
+    "MBTASchedule",
+    "MBTAStop",
+    "MBTATrip",
+    "MBTAVehicle",
+    "MBTAClient",
+    "Trip",
+    "TripStop",
+    "TripsHandler",
+    "TrainsHandler",
+    "TimetableHandler",
 ]
 
-__version__ = __version__
+__version__ = "1.0.0"
