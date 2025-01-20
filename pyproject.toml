@@ -4,7 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "MBTAclient"
-version = "1.0.0"
+version = "1.0.2"
+
 description = "A Python client for interacting with the MBTA API"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -29,5 +30,5 @@ Homepage = "https://github.com/chiabre/MBTAclient"
 Issues = "https://github.com/chiabre/MBTAclient/issues"
 
 [tool.setuptools.packages.find]
-where = ["src/mbtaclient"]
+where = ["src"]
 exclude = ["tests"]
