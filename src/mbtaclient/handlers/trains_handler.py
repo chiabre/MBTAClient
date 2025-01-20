@@ -13,8 +13,24 @@ class TrainsHandler(MBTABaseHandler):
     """Handler for managing Trips."""
 
     def __repr__(self) -> str:
-        return (f"TripHandler(departure_stop_name={self._departure_stop_name}, arrival_stop_name={self._arrival_stop_name})")
+        # Check if there are any trips
+        if not self._trips:
+            return "TrainsHandler(no trips available)"
+
+        # Get the first trip to retrieve common departure and arrival stops
+        first_trip = next(iter(self._trips.values()), None)
+
+        # Extract departure and arrival stops from the first trip
+        departure_stop = first_trip.get_stop_by_type(StopType.DEPARTURE) if first_trip else "Unknown"
+        arrival_stop = first_trip.get_stop_by_type(StopType.ARRIVAL) if first_trip else "Unknown"
+
+        # Collect all trip names
+        trip_names = [trip.mbta_trip.name for trip in self._trips.values()]
+
+        # Create the string representation with all necessary information
+        return (f"TrainsHandler(departure from {departure_stop}, arrival to {arrival_stop}, trips: {', '.join(trip_names)})")
     
+        
     @classmethod
     async def create(
         cls, 
@@ -100,7 +116,7 @@ class TrainsHandler(MBTABaseHandler):
                 await super()._set_mbta_trip(trip_id)
                 await super()._update_trip_info(trip)                    
             
-            return self._trips.values()
+            return [value for value in self._trips.values()]
             
         except Exception as e:
             self._logger.error(f"Error updating trips scheduling and info: {e}")

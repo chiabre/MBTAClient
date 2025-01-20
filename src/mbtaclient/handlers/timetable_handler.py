@@ -12,7 +12,16 @@ class TimetableHandler(MBTABaseHandler):
     """Handler for managing timetable."""
 
     def __repr__(self) -> str:
-        return (f"TripHandler(departure_stop_name={self._departure_stop_name})")
+        if self._departures:
+            # Access the first trip safely and fetch the departure stop
+            first_trip = next(iter(self._trips.values()), None)
+            departure_stop = first_trip.get_stop_by_type(StopType.DEPARTURE) if first_trip else "Unknown"
+            return f"TimetableHandler(departures from {departure_stop})"
+        else:
+            # Access the first trip safely and fetch the arrival stop
+            first_trip = next(iter(self._trips.values()), None)
+            arrival_stop = first_trip.get_stop_by_type(StopType.ARRIVAL) if first_trip else "Unknown"
+            return f"TimetableHandler(arrivals to {arrival_stop})"
     
     @classmethod
     async def create(
@@ -51,7 +60,7 @@ class TimetableHandler(MBTABaseHandler):
                 self._trips = super()._sort_trips(StopType.ARRIVAL)   
         
             
-            return self._trips.values()
+            return [value for value in self._trips.values()]
             
         except Exception as e:
             self._logger.error(f"Error updating trips: {e}")
@@ -69,7 +78,7 @@ class TimetableHandler(MBTABaseHandler):
                 if not trip.departure_datetime or trip.departure_datetime < now - timedelta(minutes=5):
                     continue
             else:
-                if not trip.arrival_datetime or trip.arrival_datetime < now + timedelta(minutes=5):
+                if not trip.arrival_datetime or trip.arrival_datetime < now - timedelta(minutes=5):
                     continue
             
             await super()._set_mbta_trip(trip_id)
