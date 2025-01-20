@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 from itertools import chain
 from abc import abstractmethod
 from typing import Optional, Tuple, Union
-
 from typing import Optional, Tuple, Union
 
 from ..client.mbta_client import MBTAClient
@@ -16,7 +15,7 @@ from ..models.mbta_schedule import MBTASchedule
 from ..models.mbta_prediction import MBTAPrediction
 from ..models.mbta_alert import MBTAAlert
 from ..models.mbta_route import MBTARoute
-from ..models.mbta_trip import MBTATrip
+
 
 class MBTABaseHandler:
     

@@ -1,6 +1,6 @@
 import aiohttp
 import logging
-from typing import Optional, Any, Dict, List, Tuple
+from typing import Optional, Any, Dict, Tuple
 
 from ..models.mbta_vehicle import MBTAVehicle
 from ..models.mbta_route import MBTARoute
@@ -181,46 +181,46 @@ class MBTAClient:
         return MBTAVehicle(data['data']), timestamp
 
     @memoize_async_mbta_client_cache()
-    async def fetch_routes(self, params: Optional[Dict[str, Any]] = None) -> Tuple[List[MBTARoute], float]:
+    async def fetch_routes(self, params: Optional[Dict[str, Any]] = None) -> Tuple[list[MBTARoute], float]:
         """Fetch a list of MBTARoute."""
         self._logger.debug("Fetching all MBTA routes")
         data, timestamp = await self._fetch_data(ENDPOINTS["ROUTES"], params)
         return [MBTARoute(item) for item in data["data"]], timestamp
 
     @memoize_async_mbta_client_cache()
-    async def fetch_trips(self, params: Optional[Dict[str, Any]] = None) -> Tuple[List[MBTATrip], float]:
+    async def fetch_trips(self, params: Optional[Dict[str, Any]] = None) -> Tuple[list[MBTATrip], float]:
         """Fetch a list of MBTATrip."""
         self._logger.debug("Fetching MBTA trips")
         data, timestamp = await self._fetch_data(ENDPOINTS["TRIPS"], params)
         return [MBTATrip(item) for item in data["data"]], timestamp
 
     @memoize_async_mbta_client_cache()
-    async def fetch_stops(self, params: Optional[Dict[str, Any]] = None) -> Tuple[List[MBTAStop], float]:
+    async def fetch_stops(self, params: Optional[Dict[str, Any]] = None) -> Tuple[list[MBTAStop], float]:
         """Fetch a list of MBTAStops."""
         self._logger.debug("Fetching MBTA stops")
         data, timestamp = await self._fetch_data(ENDPOINTS['STOPS'], params)
         return [MBTAStop(item) for item in data["data"]], timestamp
 
     @memoize_async_mbta_client_cache()
-    async def fetch_schedules(self, params: Optional[Dict[str, Any]] = None) -> Tuple[List[MBTASchedule], float]:
+    async def fetch_schedules(self, params: Optional[Dict[str, Any]] = None) -> Tuple[list[MBTASchedule], float]:
         """Fetch a list of MBTASchedules."""
         self._logger.debug("Fetching MBTA schedules")
         data, timestamp = await self._fetch_data(ENDPOINTS['SCHEDULES'], params)
         return [MBTASchedule(item) for item in data["data"]], timestamp
 
-    async def fetch_vehicles(self, params: Optional[Dict[str, Any]] = None) -> Tuple[List[MBTAVehicle], float]:
+    async def fetch_vehicles(self, params: Optional[Dict[str, Any]] = None) -> Tuple[list[MBTAVehicle], float]:
         """Fetch a list of MBTAAlerts."""
         self._logger.debug("Fetching MBTA vehicles")
         data, timestamp = await self._fetch_data(ENDPOINTS['VEHICLES'], params)
         return [MBTAVehicle(item) for item in data["data"]], timestamp
 
-    async def fetch_predictions(self, params: Optional[Dict[str, Any]] = None) -> Tuple[List[MBTAPrediction], float]:
+    async def fetch_predictions(self, params: Optional[Dict[str, Any]] = None) -> Tuple[list[MBTAPrediction], float]:
         """Fetch a list of MBTAPredictions."""
         self._logger.debug("Fetching MBTA predictions")
         data, timestamp = await self._fetch_data(ENDPOINTS['PREDICTIONS'], params)
         return [MBTAPrediction(item) for item in data["data"]], timestamp
 
-    async def fetch_alerts(self, params: Optional[Dict[str, Any]] = None) -> Tuple[List[MBTAAlert], float]:
+    async def fetch_alerts(self, params: Optional[Dict[str, Any]] = None) -> Tuple[list[MBTAAlert], float]:
         """Fetch a list of MBTAAlerts."""
         self._logger.debug("Fetching MBTA alerts")
         data, timestamp = await self._fetch_data(ENDPOINTS['ALERTS'], params)

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional, List, Dict
+from typing import Any, Optional
 
 class MBTAPrediction:
     """A prediction object to hold information about a prediction."""
@@ -40,7 +40,7 @@ class MBTAPrediction:
             self.route_id: Optional[str] = (
                 relationships.get('route', {}).get('data', {}).get('id', None) if relationships.get('route') else None
             )
-            self.alerts_ids: Optional[List[str]] = [
+            self.alerts_ids: Optional[list[str]] = [
                 alert.get('id', None) for alert in relationships.get('alerts', {}).get('data', [])
             ]
         
