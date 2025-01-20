@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from itertools import chain
 from abc import abstractmethod
 from typing import Optional, Tuple, Union
+
 from typing import Optional, Tuple, Union
 
 from ..client.mbta_client import MBTAClient
