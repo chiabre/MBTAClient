@@ -363,6 +363,10 @@ class MBTABaseHandler:
                 # Filter out trips where either departure or arrival stops are missing
                 if not departure_stop or not arrival_stop:
                     continue
+                
+                #Filter out if stops are not in the right sequence
+                if departure_stop.stop_sequence > arrival_stop.stop_sequence:
+                    continue
 
                 # Filter out trips where the arrival time is more than 5 minutes in the past
                 if arrival_stop.get_time() < now - timedelta(minutes=5):

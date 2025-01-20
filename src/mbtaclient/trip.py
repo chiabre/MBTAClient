@@ -21,7 +21,7 @@ class Trip:
         self.stops: list[Optional[TripStop]] = []
 
     def __repr__(self) -> str:
-        return (f"Trip(mbta_trip={self.mbta_trip}, mbta_route={self.mbta_route})"
+        return (f"Trip({self.mbta_route}, {self.mbta_trip})"
         )
         
     def dump(self) -> str:

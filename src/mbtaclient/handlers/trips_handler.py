@@ -1,6 +1,8 @@
 from typing import Optional
 import logging
 
+from mbtaclient.trip_stop import StopType
+
 from ..client.mbta_client import MBTAClient
 from ..handlers.base_handler import MBTABaseHandler
 
@@ -10,7 +12,13 @@ class TripsHandler(MBTABaseHandler):
     """Handler for managing Trips."""
 
     def __repr__(self) -> str:
-        return (f"TripHandler)")
+        first_trip = next(iter(self._trips.values()), None)
+        if first_trip:
+            departure_stop = first_trip.get_stop_by_type(StopType.DEPARTURE)
+            arrival_stop = first_trip.get_stop_by_type(StopType.ARRIVAL)
+            return (f"TripsHandler(departure from {departure_stop}, arrival to {arrival_stop})")
+        else:
+            return "TripsHandler(no trips available)"
     
     @classmethod
     async def create(
