@@ -360,20 +360,16 @@ class MBTABaseHandler:
                 departure_stop = trip.get_stop_by_type(StopType.DEPARTURE)
                 arrival_stop = trip.get_stop_by_type(StopType.ARRIVAL)
 
-                # Ensure both departure and arrival stops exist
+                # Filter out trips where either departure or arrival stops are missing
                 if not departure_stop or not arrival_stop:
                     continue
 
-                # Check if the trip's departure precedes its arrival in stops sequence
-                if departure_stop.stop_sequence >= arrival_stop.stop_sequence:
+                # Filter out trips where the arrival time is more than 5 minutes in the past
+                if arrival_stop.get_time() < now - timedelta(minutes=5):
                     continue
 
-                # Check if the arrival time is at least 5 minutes in the future
-                if arrival_stop.get_time() <= now + timedelta(minutes=5):
-                    continue
-
-                # If removing departed trips, ensure the departure time is within the past 5 minutes
-                if remove_departed and departure_stop.get_time() <= now - timedelta(minutes=5):
+                # If departed trips have to be filtered, filter out trips where the departure time is more than 5 minutes in the past
+                if remove_departed and departure_stop.get_time() < now - timedelta(minutes=5):
                     continue
 
                 # Add the valid trip to the processed trips

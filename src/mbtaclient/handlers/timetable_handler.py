@@ -69,7 +69,7 @@ class TimetableHandler(MBTABaseHandler):
                 if not trip.departure_datetime or trip.departure_datetime < now - timedelta(minutes=5):
                     continue
             else:
-                if not trip.arrival_datetime or trip.arrival_datetime < now + timedelta(minutes=5):
+                if not trip.arrival_datetime or trip.arrival_datetime < now - timedelta(minutes=5):
                     continue
             
             await super()._set_mbta_trip(trip_id)
