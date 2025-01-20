@@ -4,9 +4,7 @@ import logging
 from ..client.mbta_client import MBTAClient
 from ..handlers.base_handler import MBTABaseHandler
 
-from ..trip_stop import StopType
 from ..trip import Trip
-
 
 class TripsHandler(MBTABaseHandler):
     """Handler for managing Trips."""

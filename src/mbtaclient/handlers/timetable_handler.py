@@ -1,8 +1,6 @@
-
 from datetime import datetime, timedelta
 from typing import Optional
 import logging
-
 
 from ..client.mbta_client import MBTAClient
 from ..handlers.base_handler import MBTABaseHandler

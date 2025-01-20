@@ -16,7 +16,7 @@ from ..models.mbta_schedule import MBTASchedule
 from ..models.mbta_prediction import MBTAPrediction
 from ..models.mbta_alert import MBTAAlert
 from ..models.mbta_route import MBTARoute
-from ..models.mbta_trip import MBTATrip
+
 
 class MBTABaseHandler:
     
