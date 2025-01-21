@@ -28,7 +28,7 @@ class TimetableHandler(MBTABaseHandler):
         cls, 
         stop_name: str ,
         mbta_client: MBTAClient, 
-        max_trips: Optional[int] = 25,
+        max_trips: Optional[int] = 5,
         departures: Optional[bool] = True,
         logger: Optional[logging.Logger] = None)-> "TimetableHandler":
         
@@ -73,18 +73,33 @@ class TimetableHandler(MBTABaseHandler):
         i = 0
         for trip_id, trip in self._trips.items():
             
+            stop = None
             if self._departures:
-                # Skip trips with departure_datetime in the past
-                if not trip.departure_datetime or trip.departure_datetime < now - timedelta(minutes=5):
-                    continue
-            else:
-                if not trip.arrival_datetime or trip.arrival_datetime < now - timedelta(minutes=5):
-                    continue
+                stop = trip.get_stop_by_type(StopType.DEPARTURE)
+            else: 
+                stop = trip.get_stop_by_type(StopType.ARRIVAL)
             
+            if not stop:
+                continue
+            
+            if stop.get_time() < now - timedelta(minutes=5):
+                continue
+            
+            # gather addition info for the trip
             await super()._set_mbta_trip(trip_id)
             await super()._update_trip_info(trip)
-            # Check if the list of trips for the route has reached the max limit
-           
+            
+            current_stop_sequence = trip.vehicle_current_stop_sequence
+            # If vehicle_current_stop_sequence exists, use it for validation
+            if current_stop_sequence is not None:
+                
+                if current_stop_sequence > stop.stop_sequence:
+                    continue    
+
+                if trip.arrival_status in ["ALIGHTING","BOARDING"] and stop.get_time() < now - timedelta(minutes=1): 
+                    continue 
+
+            # Check if the list of trips for the route has reached the max limit           
             filtered_trips[trip_id] = trip
             i +=1
             if i == self._max_trips:
