@@ -217,7 +217,7 @@ class MBTACacheManagerStats:
         total_cache_access = (
             self._client_cache_hit + self._server_cache_hit + self._server_cache_miss
         )
-        if total_cache_access > 0 and total_cache_access % self._stats_interval == 0:
+        if cache_event in [CacheEvent.HIT,CacheEvent.MISS] and total_cache_access > 0 and total_cache_access % self._stats_interval == 0:
             self.print_stats()
 
     def print_stats(self):
