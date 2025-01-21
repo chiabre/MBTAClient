@@ -10,7 +10,7 @@ from functools import wraps
 _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_MAX_CACHE_SIZE = 128
-DEFAULT_STAS_INTERVAL = 500
+DEFAULT_STAS_INTERVAL = 100
 
 class CacheType(Enum):
     CLIENT = "client"
@@ -235,7 +235,11 @@ class MBTACacheManagerStats:
                 if total_cache_access > 0
                 else 0
             )
-            total_cache_hit_rate = client_cache_hit_rate + server_cache_hit_rate
+            total_cache_hit_rate = (
+                int(((self._client_cache_hit + self._server_cache_hit) / total_cache_access) * 100)
+                if total_cache_access > 0
+                else 0
+            )
             total_cache_entry = self._client_cache_entry + self._server_cache_entry
             client_cache_usage = (
                 int((self._client_cache_entry / self._max_cache_size) * 100)
@@ -256,16 +260,15 @@ class MBTACacheManagerStats:
                 self._client_cache_eviction + self._server_cache_eviction
             )
 
-            self._logger.info("MBTA Cache Stats:")
-            self._logger.info(f"{total_cache_access} accesses")
+            self._logger.info(f"MBTA Cache Stats @{total_cache_access} accesses:")
             self._logger.info(
-                f"{self._generate_bar(total_cache_hit_rate)} {total_cache_hit_rate}% total hit rate"
+                f"{self._generate_bar(total_cache_hit_rate)} {total_cache_hit_rate}% total cache hit rate"
             )
             self._logger.info(
-                f"{self._generate_bar(client_cache_hit_rate)} {client_cache_hit_rate}% client hit rate"
+                f"{self._generate_bar(client_cache_hit_rate)} {client_cache_hit_rate}% client cache hit rate"
             )
             self._logger.info(
-                f"{self._generate_bar(server_cache_hit_rate)} {server_cache_hit_rate}% server hit rate"
+                f"{self._generate_bar(server_cache_hit_rate)} {server_cache_hit_rate}% server cache hit rate"
             )
             self._logger.info(f"{total_cache_entry} total cache entries ({self._client_cache_entry} client + {self._server_cache_entry} server) ")
             self._logger.info(
