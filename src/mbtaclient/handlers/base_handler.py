@@ -363,21 +363,45 @@ class MBTABaseHandler:
                 # Filter out trips where either departure or arrival stops are missing
                 if not departure_stop or not arrival_stop:
                     continue
-                
-                #Filter out if stops are not in the right sequence
+
+                # Filter out trips where stops are not in the correct sequence
                 if departure_stop.stop_sequence > arrival_stop.stop_sequence:
                     continue
 
-                # Filter out trips where the arrival time is more than 5 minutes in the past
-                if arrival_stop.get_time() < now - timedelta(minutes=5):
-                    continue
+                vehicle_current_stop_sequence = trip.vehicle_current_stop_sequence
 
-                # If departed trips have to be filtered, filter out trips where the departure time is more than 5 minutes in the past
-                if remove_departed and departure_stop.get_time() < now - timedelta(minutes=5):
-                    continue
+                # If vehicle_current_stop_sequence exists, use it for validation
+                if vehicle_current_stop_sequence is not None:
+                    #  Filter out completed trips
+                    if vehicle_current_stop_sequence > arrival_stop.stop_sequence:
+                        continue
+
+                    # Check if the trip has departed and filter it out if remove_departed is True
+                    if remove_departed and vehicle_current_stop_sequence > departure_stop.stop_sequence:
+                        continue
+
+                    # Adjust arrival threshold if the vehicle is at the arrival stop
+                    if vehicle_current_stop_sequence == arrival_stop.stop_sequence and trip.arrival_status == "ALIGHTING":
+                        arrival_threshold = now - timedelta(minutes=1)
+                    else:
+                        arrival_threshold = now - timedelta(minutes=5)
+
+                    # Filter out trips based on arrival time
+                    if arrival_stop.get_time() < arrival_threshold:
+                        continue
+
+                else:  # Fallback to time-based logic
+                    # Filter out trips based on arrival time
+                    if arrival_stop.get_time() < now - timedelta(minutes=5):
+                        continue
+
+                    # Filter out trips based on departure time if required
+                    if remove_departed and departure_stop.get_time() < now - timedelta(minutes=5):
+                        continue
 
                 # Add the valid trip to the processed trips
                 processed_trips[trip_id] = trip
+
 
             return dict(list(processed_trips.items())[:self._max_trips])
 
