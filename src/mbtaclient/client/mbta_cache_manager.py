@@ -50,6 +50,16 @@ class MBTACacheManager:
         key_data = {"path": path, "params": params or {}}
         return hashlib.sha256(json.dumps(key_data, sort_keys=True).encode()).hexdigest()
 
+    def _is_cache_entry_valid(self, entry: dict) -> bool:
+        """Check if a client cache entry is valid based on expiration time
+           Cache is invalidate at the beginning of each service day, 3AM 
+        """
+        now = datetime.now()
+        expiration_time = datetime.combine(now.date(), datetime.min.time()) + timedelta(hours=3)
+        if now >= expiration_time:
+            expiration_time += timedelta(days=1)
+        return entry["timestamp"] < expiration_time.timestamp()
+    
     def _enforce_cache_size(self, cache: dict) -> None:
         """Ensure the cache does not exceed the maximum size."""
         while len(cache) > self._max_cache_size:
@@ -71,20 +81,11 @@ class MBTACacheManager:
             self._logger.debug("All cache entries have been cleared.")
             
     ## CLIENT            
-    def _is_client_cache_entry_valid(self, entry: dict) -> bool:
-        """Check if a client cache entry is valid based on expiration time."""
-        now = datetime.now()
-        expiration_time = datetime.combine(now.date(), datetime.min.time()) + timedelta(hours=3)
-        if now >= expiration_time:
-            expiration_time += timedelta(days=1)
-        return entry["timestamp"] < expiration_time.timestamp()
-    
-    
     def get_client_cache_data(self, key) -> Tuple[Optional[Any],Optional[float]]:
         """Retrieve cached data from the client-side cache."""
         cached_entry = self._client_cache.get(key)
         if cached_entry:
-            if self._is_client_cache_entry_valid(cached_entry):
+            if self._is_cache_entry_valid(cached_entry):
                 if self.stats:
                     self.cache_stats.increase_counter(CacheType.CLIENT,CacheEvent.HIT)
                 return cached_entry["data"], cached_entry["timestamp"] 
@@ -106,14 +107,18 @@ class MBTACacheManager:
         if self.stats:
             self.cache_stats.increase_counter(CacheType.CLIENT,CacheEvent.UPDATE,cache_size=len(self._client_cache))
         
-
     ## SERVER
     def get_server_cache_data(self, path: str, params: Optional[Dict[str, Any]]) -> Tuple[Optional[Any],Optional[float],Optional[str]]:
         """Retrieve cached data from the server-side cache."""
         key = self.generate_cache_key(path, params)
         cached_entry = self._server_cache.get(key)
         if cached_entry:
-            return cached_entry["data"], cached_entry["timestamp"], cached_entry ["last_modified"]
+            if self._is_cache_entry_valid(cached_entry):
+                return cached_entry["data"], cached_entry["timestamp"], cached_entry ["last_modified"]
+            else: 
+                del self._client_cache[key]
+                if self.stats:
+                    self.cache_stats.increase_counter(CacheType.CLIENT,CacheEvent.EVICTION)
         return None, None, None
 
     def update_server_cache(self, path: str, params: Optional[Dict[str, Any]], data: Any, last_modified: Optional[str] = None) -> float:
