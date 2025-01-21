@@ -310,7 +310,10 @@ class Trip:
         if self.mbta_vehicle.current_stop_sequence == stop.stop_sequence:
             status = self.mbta_vehicle.current_status
             if status == "STOPPED_AT":
-                return "BOARDING"
+                if stop_type == StopType.DEPARTURE:
+                    return "BOARDING"
+                else:
+                    return "ALIGHTING"
             if status == "INCOMING_AT":
                 return "ARRIVING NOW"
             if status == "IN_TRANSIT_TO":
