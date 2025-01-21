@@ -9,7 +9,7 @@ from ..models.mbta_schedule import MBTASchedule
 from ..models.mbta_prediction import MBTAPrediction
 from ..models.mbta_trip import MBTATrip
 from ..models.mbta_alert import MBTAAlert
-from .mbta_cache_manager import MBTACacheManager, memoize_async_mbta_client_cache
+from .mbta_cache_manager import CacheEvent, CacheType, MBTACacheManager, memoize_async_mbta_client_cache
 from .mbta_session_manager import MBTASessionManager
 
 MBTA_DEFAULT_HOST = "api-v3.mbta.com"
@@ -106,7 +106,7 @@ class MBTAClient:
 
         url = f"https://{MBTA_DEFAULT_HOST}/{path}"
         
-        last_modified = self._cache_manager.get_last_modified(path, params)
+        cached_data, timestamp, last_modified = self._cache_manager.get_server_cache_data(path, params)
         if last_modified:
             headers["If-Modified-Since"] = last_modified
         headers["Accept-Encoding"] = "gzip"
@@ -130,9 +130,9 @@ class MBTAClient:
                     raise MBTATooManyRequestsError("Rate limit exceeded (HTTP 429). Please use API key.")
 
                 if response.status == 304:
-                    cached_data, timestamp = self._cache_manager.get_cached_server_data(path, params)
                     if cached_data is not None:
-                        self._cache_manager.server_cache_hit += 1
+                        if  self._cache_manager.stats:
+                            self._cache_manager.cache_stats.increase_counter(CacheType.SERVER,CacheEvent.HIT)
                         return cached_data, timestamp
                     else:
                         raise MBTAClientError(f"Cache empty for 304 response: {url}")
@@ -142,8 +142,9 @@ class MBTAClient:
                 data = await response.json()
                 last_modified = response.headers.get("Last-Modified")
                 if last_modified:
-                   timestamp = self._cache_manager.update_server_cache(path=path, params=params, data=data, last_modified=last_modified)
-                self._cache_manager.server_cache_miss += 1
+                    timestamp = self._cache_manager.update_server_cache(path=path, params=params, data=data, last_modified=last_modified)
+                if  self._cache_manager.stats:
+                    self._cache_manager.cache_stats.increase_counter(CacheType.SERVER,CacheEvent.MISS)
                 return data, timestamp
 
         except TimeoutError as error:
