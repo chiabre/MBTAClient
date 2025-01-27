@@ -2,8 +2,7 @@ from dataclasses import dataclass, field
 from typing import Union, Optional
 from datetime import datetime, timedelta
 
-from .registries.mbta_trips import MBTATripsRegistry
-from .registries.mbta_routes import MBTARoutesRegistry
+from .mbta_object_store import MBTARouteObjStore, MBTATripObjStore, MBTAVehicleObjStore
 
 from .trip_stop import TripStop, StopType
 
@@ -18,7 +17,7 @@ class Trip:
     """A class to manage a Trip with multiple stops."""
     mbta_route_id: Optional[str] = None
     mbta_trip_id: Optional[str] = None
-    mbta_vehicle: Optional['MBTAVehicle'] = None 
+    mbta_vehicle_id: Optional[str] = None 
     mbta_alerts: list[Optional[str]] = field(default_factory=list)
     stops: list[Optional['TripStop']] = field(default_factory=list)
 
@@ -26,23 +25,36 @@ class Trip:
     @property
     def mbta_route(self) -> Optional[MBTARoute]:
         """Retrieve the MBTARoute object for this Trip."""
-        return MBTARoutesRegistry.get_mbta_route(self.mbta_route_id)
+        return MBTARouteObjStore.get_by_id(self.mbta_route_id)
     
     @mbta_route.setter
     def mbta_route(self, mbta_route: MBTARoute) -> None:
-        self.mbta_route_id = mbta_route.id
-        MBTARoutesRegistry.register_mbta_route(mbta_route)
+        if mbta_route:
+            self.mbta_route_id = mbta_route.id
+            MBTARouteObjStore.store(mbta_route)
         
     @property
     def mbta_trip(self) -> Optional[MBTATrip]:
         """Retrieve the MBTARoute object for this Trip."""
-        return MBTATripsRegistry.get_mbta_trip(self.mbta_trip_id)
+        return MBTATripObjStore.get_by_id(self.mbta_trip_id)
     
     @mbta_trip.setter
     def mbta_trip(self, mbta_trip: MBTATrip) -> None:
-        self.mbta_trip_id = mbta_trip.id
-        MBTATripsRegistry.register_mbta_trip(mbta_trip)
+        if mbta_trip:
+            self.mbta_trip_id = mbta_trip.id
+            MBTATripObjStore.store(mbta_trip)
+
+    @property
+    def mbta_vehicle(self) -> Optional[MBTAVehicle]:
+        """Retrieve the MBTARoute object for this Trip."""
+        return MBTAVehicleObjStore.get_by_id(self.mbta_vehicle_id)
     
+    @mbta_vehicle.setter
+    def mbta_vehicle(self, mbta_vehicle: MBTAVehicle) -> None:
+        if mbta_vehicle:
+            self.mbta_vehicle_id = mbta_vehicle.id
+            MBTAVehicleObjStore.store(mbta_vehicle)
+ 
     # trip
     @property
     def headsign(self) -> Optional[str]:
@@ -239,8 +251,6 @@ class Trip:
                 self.get_stop_id_by_stop_type(StopType.ARRIVAL)
             ] if stop_id is not None
         ]
-        
-
        
     def get_alert_header(self, alert_index: int) -> Optional[str]:
         if 0 <= alert_index < len(self.mbta_alerts):

@@ -31,7 +31,7 @@ class MBTATrip:
     def __repr__(self) -> str:
         return (f"MBTATrip(id={self.id}, headsign={self.headsign})")
 
-class MBTAStopError(Exception):
+class MBTATripError(Exception):
     pass
 
 

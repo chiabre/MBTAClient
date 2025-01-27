@@ -8,8 +8,7 @@ from typing import Optional, Tuple, Union
 
 from typing import Optional, Tuple, Union
 
-from ..registries.mbta_routes import MBTARoutesRegistry
-from ..registries.mbta_strops import MBTAStopsRegistry
+from ..mbta_object_store import MBTARouteObjStore, MBTAStopObjStore
 
 from ..client.mbta_client import MBTAClient
 
@@ -92,10 +91,10 @@ class MBTABaseHandler:
     def __process_mbta_stops(self, mbta_stops: list[MBTAStop], departure_stop_name: Optional[str], arrival_stop_name: Optional[str]) -> None:
         for mbta_stop in mbta_stops:
             if departure_stop_name and departure_stop_name.lower() == mbta_stop.name.lower() :
-                MBTAStopsRegistry.register_mbta_stop(mbta_stop=mbta_stop)
+                MBTAStopObjStore.store(mbta_stop)
                 self._mbta_stops_ids[StopType.DEPARTURE].append(mbta_stop.id)
             if arrival_stop_name and arrival_stop_name.lower() == mbta_stop.name.lower():
-                MBTAStopsRegistry.register_mbta_stop(mbta_stop=mbta_stop)
+                MBTAStopObjStore.store(mbta_stop)
                 self._mbta_stops_ids[StopType.ARRIVAL].append(mbta_stop.id)
 
         if departure_stop_name and len(self._mbta_stops_ids[StopType.DEPARTURE]) == 0:
@@ -202,7 +201,7 @@ class MBTABaseHandler:
                 
             #Set the mbta_route for the trip, 
             if not trip.mbta_route and scheduling.route_id:
-                if MBTARoutesRegistry.get_mbta_route(id=scheduling.route_id):
+                if MBTARouteObjStore.get_by_id(scheduling.route_id):
                     trip.mbta_route_id = scheduling.route_id
                 else:
                     mbta_route, _ = await self._mbta_client.fetch_route(scheduling.route_id)
@@ -234,9 +233,9 @@ class MBTABaseHandler:
         return trips
     
 
-    def _get_mbta_stop_by_id(self, id: str) -> Optional[MBTAStop]:
-        if any(id in stop_ids for stop_ids in self._mbta_stops_ids.values()):
-            return MBTAStopsRegistry.get_mbta_stop(id)
+    def _get_mbta_stop_by_id(self, stop_id: str) -> Optional[MBTAStop]:
+        if any(stop_id in stop_ids for stop_ids in self._mbta_stops_ids.values()):
+            return MBTAStopObjStore.get_by_id(stop_id)
         return None
     
         

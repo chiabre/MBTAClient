@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Optional
 from datetime import datetime, timedelta
 
-from .registries.mbta_strops import MBTAStopsRegistry
+from .mbta_object_store import MBTAStopObjStore
 from .models.mbta_stop import MBTAStop
 
 class StopType(Enum):
@@ -56,7 +56,11 @@ class TripStop:
         self.arrival_time = TripStopTime(arrival_time) if arrival_time else None 
         self.departure_time = TripStopTime(departure_time) if departure_time else None
 
-    def update_stop(self, mbta_stop_id: str ,stop_sequence: int,arrival_time: Optional[datetime] = None, departure_time: Optional[datetime] = None, ) -> None:
+    def __repr__(self) -> str:
+        return (f"TripStop(stop_type={self.stop_type.value}, mbta_stop_id={self.mbta_stop_id}, stop_sequence={self.stop_sequence},time={self.time.replace(tzinfo=None)}, time_to={self.time_to.seconds}, deltatime={self.deltatime.seconds if self.deltatime else None})"
+        )
+        
+    def update_stop(self, mbta_stop_id: str ,stop_sequence: int, arrival_time: Optional[datetime] = None, departure_time: Optional[datetime] = None, ) -> None:
         """
         Updates the stop with new information.
 
@@ -83,13 +87,13 @@ class TripStop:
     @property
     def mbta_stop(self) -> Optional[MBTAStop]:
         """Retrieve the MBTAStop object for this TripStop."""
-        return MBTAStopsRegistry.get_mbta_stop(self.mbta_stop_id)
+        return MBTAStopObjStore.get_by_id(self.mbta_stop_id)
 
     @mbta_stop.setter
     def mbta_stop(self, mbta_stop: "MBTAStop") -> None:
         """Set the MBTAStop and add it to the registry."""
         self.mbta_stop_id = mbta_stop.id  # Update the stop ID
-        MBTAStopsRegistry.register_mbta_stop(mbta_stop.id, mbta_stop)  # Add to registry
+        MBTAStopObjStore.store(mbta_stop)  # Add to store
 
     @property
     def time(self) -> Optional[datetime]:
@@ -107,7 +111,7 @@ class TripStop:
 
     @property
     def deltatime(self) -> Optional[timedelta]:
-        if self.arrival and self.arrival_time.delta:
+        if self.arrival_time and self.arrival_time.delta:
             return self.arrival_time.delta
         if self.departure_time and self.departure_time.delta:
             return self.departure_time.delta
@@ -116,5 +120,5 @@ class TripStop:
     @property
     def time_to(self) -> Optional[timedelta]:
         if self.time:
-            return self.time - datetime.now()
+            return self.time - datetime.now().astimezone()
         return None

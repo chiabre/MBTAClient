@@ -1,8 +1,6 @@
 from typing import Optional
 import logging
 
-from ..trip_stop import StopType
-
 from ..client.mbta_client import MBTAClient
 from ..handlers.base_handler import MBTABaseHandler
 
