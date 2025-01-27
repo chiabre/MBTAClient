@@ -2,11 +2,11 @@ from datetime import datetime, timedelta
 from typing import Optional, Tuple
 import logging
 
-from ..registries.mbta_trips import MBTATripsRegistry
+from ..mbta_object_store import MBTATripObjStore
 
 from ..client.mbta_client import MBTAClient
 from ..handlers.base_handler import MBTABaseHandler
-from ..models.mbta_trip import MBTATrip
+from ..models.mbta_trip import MBTATrip, MBTATripError
 from ..trip import Trip
 
 
@@ -43,12 +43,12 @@ class TrainsHandler(MBTABaseHandler):
             mbta_trips, _ = await self.__fetch_trips_by_names(trips_names)
             if mbta_trips:
                 for mbta_trip in mbta_trips:
-                    if MBTATripsRegistry.get_mbta_trip(mbta_trip.id):
-                        MBTATripsRegistry.register_mbta_trip(mbta_trip=mbta_trip)
+                    if not MBTATripObjStore.get_by_id(mbta_trip.id):
+                        MBTATripObjStore.store(mbta_trip)
                     self._mbta_trips_ids.append(mbta_trip.id)
             else:
                 self._logger.error(f"Invalid MBTA trip name {trips_names}")
-            #    raise MBTATripError(f"Invalid MBTA trip name {trips_names}")
+                raise MBTATripError(f"Invalid MBTA trip name {trips_names}")
             
         except Exception as e:
             self._logger.error(f"Error updating MBTA trips: {e}")
@@ -90,7 +90,7 @@ class TrainsHandler(MBTABaseHandler):
                 if len(filtered_trips) == 0:
                     if i == 6:
                         self._logger.error(f"Error retrieving scheduling for {trips.keys()}")
-                    #    raise MBTATripError("No trip between the provided stops in the next 7 days")
+                        raise MBTATripError("No trip between the provided stops in the next 7 days")
                     continue
                              
                 break

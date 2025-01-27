@@ -1,7 +1,9 @@
+from inspect import isdatadescriptor
 import pytest
 from dotenv import load_dotenv
 import os
 
+from src.mbtaclient.trip import Trip
 from src.mbtaclient.client.mbta_client import MBTAClient
 from src.mbtaclient.client.mbta_cache_manager import MBTACacheManager
 from src.mbtaclient.handlers.timetable_handler import TimetableHandler
@@ -77,9 +79,7 @@ async def test_handler(stop_name, route_type):
             )
             
             # Print trip details for debugging
-            print(
-                f"Route Name: {trip.route_name}, "
-                f"Headsign: {trip.headsign}, "
-                f"Departure Time: {trip.departure_time.replace(tzinfo=None)}, "
-                f"Status: {trip.departure_status}"
-            )
+            properties = [attr for attr in dir(Trip) if isdatadescriptor(getattr(Trip, attr))]
+            for property_name in properties:
+                print(f"trip.{property_name}: {getattr(trip, property_name)}")  
+            print("##############") 
