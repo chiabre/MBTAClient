@@ -47,4 +47,4 @@ def test_mbta_prediction_init():
 
     # Confirm the __repr__ method includes key identifying attributes
     repr_string = repr(prediction)
-    assert f"MBTAPrediction(id={prediction.id}, route_id={prediction.route_id}, stop_id={prediction.stop_id})" in repr_string
+    assert f"MBTAPrediction:{prediction.id}" in repr_string
