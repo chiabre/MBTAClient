@@ -2,7 +2,9 @@ from dataclasses import dataclass, field
 from typing import Union, Optional
 from datetime import datetime, timedelta
 
-from .mbta_object_store import MBTARouteObjStore, MBTATripObjStore, MBTAVehicleObjStore
+from .models.mbta_alert import MBTAAlert
+
+from .mbta_object_store import MBTAAlertObjStore, MBTARouteObjStore, MBTATripObjStore, MBTAVehicleObjStore
 
 from .trip_stop import TripStop, StopType
 
@@ -11,6 +13,7 @@ from .models.mbta_prediction import MBTAPrediction
 from .models.mbta_route import MBTARoute
 from .models.mbta_trip import MBTATrip
 from .models.mbta_vehicle import MBTAVehicle
+from .models.mbta_alert import MBTAAlert
 
 @dataclass
 class Trip:
@@ -18,7 +21,7 @@ class Trip:
     mbta_route_id: Optional[str] = None
     mbta_trip_id: Optional[str] = None
     mbta_vehicle_id: Optional[str] = None 
-    mbta_alerts: list[Optional[str]] = field(default_factory=list)
+    mbta_alerts_ids: list[Optional[str]] = field(default_factory=list)
     stops: list[Optional['TripStop']] = field(default_factory=list)
 
     # registry 
@@ -54,6 +57,20 @@ class Trip:
         if mbta_vehicle:
             self.mbta_vehicle_id = mbta_vehicle.id
             MBTAVehicleObjStore.store(mbta_vehicle)
+            
+    @property
+    def mbta_alerts(self) -> Optional[list[MBTAAlert]]:
+        """Retrieve the MBTARoute object for this Trip."""
+        mbta_alerts = []
+        for mbta_alert_id in self.mbta_alerts_ids:
+            mbta_alerts.append(MBTAAlertObjStore.get_by_id(mbta_alert_id))
+        return mbta_alerts
+    
+    @mbta_alerts.setter
+    def mbta_alerts(self, mbta_alerts: list[MBTAAlert]) -> None:
+        if mbta_alerts:
+            for mbta_alert in mbta_alerts:
+                MBTAAlertObjStore.store(mbta_alert)
  
     # trip
     @property
@@ -96,19 +113,19 @@ class Trip:
     
     @property
     def route_id(self) -> Optional[str]:
-        return self.mbta_route.id if self.mbta_route else None
+        return self.mbta_route.id if self.mbta_route and self.mbta_route.id else None
     
     @property
     def route_short_name(self) -> Optional[str]:
-        return self.mbta_route.short_name if self.mbta_route else None
+        return self.mbta_route.short_name if self.mbta_route and self.mbta_route.short_name else None
 
     @property
     def route_long_name(self) -> Optional[str]:
-        return self.mbta_route.long_name if self.mbta_route else None
+        return self.mbta_route.long_name if self.mbta_route and self.mbta_route.long_name else None
 
     @property
     def route_color(self) -> Optional[str]:
-        return self.mbta_route.color if self.mbta_route else None
+        return self.mbta_route.color if self.mbta_route and self.mbta_route.color else None
 
     @property
     def route_description(self) -> Optional[str]:
@@ -116,32 +133,32 @@ class Trip:
 
     @property
     def route_type(self) -> Optional[str]:
-        return self.mbta_route.type if self.mbta_route else None
+        return self.mbta_route.type if self.mbta_route and self.mbta_route.type else None
 
     # vehicle
     @property
     def vehicle_current_status(self) -> Optional[str]:
-        return self.mbta_vehicle.current_status if self.mbta_vehicle else None
+        return self.mbta_vehicle.current_status if self.mbta_vehicle and self.mbta_vehicle.current_status else None
  
     @property
     def vehicle_current_stop_sequence(self) -> Optional[str]:
-        return self.mbta_vehicle.current_stop_sequence if self.mbta_vehicle else None
+        return self.mbta_vehicle.current_stop_sequence if self.mbta_vehicle and self.mbta_vehicle.current_stop_sequence else None
        
     @property
     def vehicle_longitude(self) -> Optional[float]:
-        return self.mbta_vehicle.longitude if self.mbta_vehicle else None
+        return self.mbta_vehicle.longitude if self.mbta_vehicle and self.mbta_vehicle.longitude else None
 
     @property
     def vehicle_latitude(self) -> Optional[float]:
-        return self.mbta_vehicle.latitude if self.mbta_vehicle else None
+        return self.mbta_vehicle.latitude if self.mbta_vehicle and self.mbta_vehicle.latitude else None
 
     @property
     def vehicle_occupancy_status(self) -> Optional[str]:
-        return self.mbta_vehicle.occupancy_status if self.mbta_vehicle else None
+        return self.mbta_vehicle.occupancy_status if self.mbta_vehicle and self.mbta_vehicle.occupancy_status else None
 
     @property
     def vehicle_updated_at(self) -> Optional[datetime]:
-        return self.mbta_vehicle.updated_at if self.mbta_vehicle else None
+        return self.mbta_vehicle.updated_at if self.mbta_vehicle and self.mbta_vehicle.updated_at else None
     
     #departure stop
     @property
@@ -161,7 +178,7 @@ class Trip:
        return self.departure_stop.time if self.departure_stop and self.departure_stop.time else None
 
     @property
-    def departure_deltatime(self) -> Optional[timedelta]:
+    def departure_deltatime(self) -> Optional[int]:
         return self.departure_stop.deltatime if self.departure_stop and self.departure_stop.deltatime else None
 
     @property
