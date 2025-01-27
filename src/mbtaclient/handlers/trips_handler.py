@@ -10,15 +10,6 @@ from ..trip import Trip
 
 class TripsHandler(MBTABaseHandler):
     """Handler for managing Trips."""
-
-    def __repr__(self) -> str:
-        first_trip = next(iter(self._trips.values()), None)
-        if first_trip:
-            departure_stop = first_trip.get_stop_by_type(StopType.DEPARTURE)
-            arrival_stop = first_trip.get_stop_by_type(StopType.ARRIVAL)
-            return (f"TripsHandler(departure from {departure_stop}, arrival to {arrival_stop})")
-        else:
-            return "TripsHandler(no trips available)"
     
     @classmethod
     async def create(
@@ -44,20 +35,34 @@ class TripsHandler(MBTABaseHandler):
 
     async def update(self) -> list[Trip]:
         self._logger.debug("Updating trips scheduling and info")
+
         try:
-            
-            self._trips = await super()._update_scheduling()
-            
-            self._trips = super()._filter_trips(remove_departed=True)
-            
-            for trip_id, trip in self._trips.items():
-            
-                await super()._set_mbta_trip(trip_id)
-                await super()._update_trip_info(trip)
-            
-            return [value for value in self._trips.values()]
-            
+            # Initialize trips
+            trips: dict[str, Trip] = {}
+
+            # Update trip scheduling
+            updated_trips = await super()._update_scheduling(trips=trips)
+
+            # Filter out departed trips
+            filtered_trips = super()._filter_trips(trips=updated_trips, remove_departed=True)
+
+            # Update trip details
+            detailed_trips = await super()._update_details(trips=filtered_trips)
+
+            # Filter out departed trips again
+            filtered_detailed_trips = super()._filter_trips(trips=detailed_trips, remove_departed=True)
+
+            # Limit trips to the maximum allowed
+            limited_trips = dict(list(filtered_detailed_trips.items())[:self._max_trips])
+
+            # Sort trips by departure time
+            #sorted_trips = super()._sort_trips(limited_trips, StopType.DEPARTURE)
+
+            # Return the sorted trips as a list
+            return list(limited_trips.values())
+
         except Exception as e:
-            self._logger.error(f"Error updating trips scheduling and info: {e}")
-            raise
+            self._logger.error(f"Failed to update trips: {e}")
+            return []
+
         

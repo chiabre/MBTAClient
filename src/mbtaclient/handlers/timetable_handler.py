@@ -28,7 +28,7 @@ class TimetableHandler(MBTABaseHandler):
         cls, 
         stop_name: str ,
         mbta_client: MBTAClient, 
-        max_trips: Optional[int] = 25,
+        max_trips: Optional[int] = 5,
         departures: Optional[bool] = True,
         logger: Optional[logging.Logger] = None)-> "TimetableHandler":
         
@@ -50,44 +50,78 @@ class TimetableHandler(MBTABaseHandler):
         self._logger.debug("Updating Trips")
         try:
             
-            await super()._update_scheduling()
+            # Initialize trips
+            trips: dict[str, Trip] = {}
+
+            # Update trip scheduling
+            updated_trips = await super()._update_scheduling(trips=trips)
             
-            self._trips = await self.create_timetable()
+            #sorted_trips = super()._sort_trips(updated_trips, StopType.DEPARTURE)
+ 
+            # Filter out departed trips'
+            filtered_trips = self.filter_trips(trips=updated_trips, remove_departed=True)
+
+            # Update trip details
+            detailed_trips = await super()._update_details(trips=filtered_trips)
+
+            # Filter out departed trips again
+            filtered_detailed_trips = self.filter_trips(trips=detailed_trips, remove_departed=True)
+
+            # Limit trips to the maximum allowed
+            limited_trips = dict(list(filtered_detailed_trips.items())[:self._max_trips])
+
+            # Sort trips by departure time
+            #sorted_trips = super()._sort_trips(limited_trips, StopType.DEPARTURE)           
             
-            if self._departures:
-                self._trips = super()._sort_trips(StopType.DEPARTURE)
-            else:
-                self._trips = super()._sort_trips(StopType.ARRIVAL)   
+            # self._trips = await self.create_timetable()
+            
+            # if self._departures:
+            #     self._trips = super()._sort_trips(StopType.DEPARTURE)
+            # else:
+            #     self._trips = super()._sort_trips(StopType.ARRIVAL)   
         
-            
-            return [value for value in self._trips.values()]
+            return list(limited_trips.values())
             
         except Exception as e:
             self._logger.error(f"Error updating trips: {e}")
             raise
-        
-    async def create_timetable(self) -> dict[str, Trip]:
-        
+   
+    def filter_trips(self, trips: dict[str, Trip], remove_departed: bool = False) -> dict[str, Trip]:
+        """Filter trips based on conditions like direction, departure, and arrival times."""
+        self._logger.debug("Filtering Trips")
         now = datetime.now().astimezone()
         filtered_trips: dict[str, Trip] = {}
-        i = 0
-        for trip_id, trip in self._trips.items():
-            
-            if self._departures:
-                # Skip trips with departure_datetime in the past
-                if not trip.departure_datetime or trip.departure_datetime < now - timedelta(minutes=5):
+        try:
+            trips = super()._sort_trips(trips)
+            for trip_id, trip in trips.items():
+                departure_stop = trip.get_stop_by_type(StopType.DEPARTURE)
+                arrival_stop = trip.get_stop_by_type(StopType.ARRIVAL)
+                
+                if arrival_stop:
                     continue
-            else:
-                if not trip.arrival_datetime or trip.arrival_datetime < now - timedelta(minutes=5):
+                
+                if departure_stop.arrival_time and not departure_stop.departure_time:
                     continue
-            
-            await super()._set_mbta_trip(trip_id)
-            await super()._update_trip_info(trip)
-            # Check if the list of trips for the route has reached the max limit
-           
-            filtered_trips[trip_id] = trip
-            i +=1
-            if i == self._max_trips:
-                break
+
+                vehicle_current_stop_sequence = trip.vehicle_current_stop_sequence
+
+                # If vehicle_current_stop_sequence exists, use it for validation
+                if vehicle_current_stop_sequence is not None:
+                    # Check if the trip has departed and filter it out if remove_departed is true and trip has departed more than 1 min ago
+                    if remove_departed and vehicle_current_stop_sequence > departure_stop.stop_sequence and departure_stop.time < now - timedelta(minutes=1):
+                        continue
+
+                else:  # Fallback to time-based logic
+
+                    # Filter out trips based on departure time if required
+                    if remove_departed and departure_stop.time < now - timedelta(minutes=10):
+                        continue
+
+                # Add the valid trip to the processed trips
+                filtered_trips[trip_id] = trip
+
+            return dict(list(filtered_trips.items())[:100])
         
-        return filtered_trips
+        except Exception as e:
+            self._logger.error(f"Error filtering trips: {e}")
+            raise   

@@ -1,3 +1,4 @@
+from datetime import datetime
 import pytest
 from src.mbtaclient.models.mbta_prediction import MBTAPrediction  # Adjust import path as per your project structure
 from tests.mock_data import VALID_PREDICTION_RESPONSE_DATA  # Mock data import
@@ -10,8 +11,16 @@ def test_mbta_prediction_init():
 
     # Test expected attributes
     assert prediction.id == VALID_PREDICTION_RESPONSE_DATA.get("id")
-    assert prediction.arrival_time == VALID_PREDICTION_RESPONSE_DATA.get("attributes", {}).get("arrival_time")
-    assert prediction.departure_time == VALID_PREDICTION_RESPONSE_DATA.get("attributes", {}).get("departure_time")
+    arrival_time = VALID_PREDICTION_RESPONSE_DATA.get("attributes", {}).get("arrival_time")
+    departure_time = VALID_PREDICTION_RESPONSE_DATA.get("attributes", {}).get("departure_time")
+    if arrival_time:
+        assert prediction.arrival_time == datetime.fromisoformat(arrival_time)
+    else:
+        assert prediction.arrival_time is None
+    if departure_time:
+        assert prediction.departure_time == datetime.fromisoformat(departure_time)
+    else:
+        assert prediction.departure_time is None 
     assert prediction.direction_id == VALID_PREDICTION_RESPONSE_DATA.get("attributes", {}).get("direction_id")
     assert prediction.status == VALID_PREDICTION_RESPONSE_DATA.get("attributes", {}).get("status")
     assert prediction.revenue_status == VALID_PREDICTION_RESPONSE_DATA.get("attributes", {}).get("revenue_status")

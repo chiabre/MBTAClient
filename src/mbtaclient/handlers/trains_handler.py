@@ -2,34 +2,16 @@ from datetime import datetime, timedelta
 from typing import Optional, Tuple
 import logging
 
+from ..registries.mbta_trips import MBTATripsRegistry
+
 from ..client.mbta_client import MBTAClient
 from ..handlers.base_handler import MBTABaseHandler
-from ..models.mbta_trip import MBTATrip, MBTATripError
-from ..trip_stop import StopType
+from ..models.mbta_trip import MBTATrip
 from ..trip import Trip
 
 
 class TrainsHandler(MBTABaseHandler):
     """Handler for managing Trips."""
-
-    def __repr__(self) -> str:
-        # Check if there are any trips
-        if not self._trips:
-            return "TrainsHandler(no trips available)"
-
-        # Get the first trip to retrieve common departure and arrival stops
-        first_trip = next(iter(self._trips.values()), None)
-
-        # Extract departure and arrival stops from the first trip
-        departure_stop = first_trip.get_stop_by_type(StopType.DEPARTURE) if first_trip else "Unknown"
-        arrival_stop = first_trip.get_stop_by_type(StopType.ARRIVAL) if first_trip else "Unknown"
-
-        # Collect all trip names
-        trip_names = [trip.mbta_trip.name for trip in self._trips.values()]
-
-        # Create the string representation with all necessary information
-        return (f"TrainsHandler(departure from {departure_stop}, arrival to {arrival_stop}, trips: {', '.join(trip_names)})")
-    
         
     @classmethod
     async def create(
@@ -48,24 +30,25 @@ class TrainsHandler(MBTABaseHandler):
             max_trips=len(trips_names),
             logger=logger)
         
+        instance._mbta_trips_ids = []
         instance._logger = logger or logging.getLogger(__name__)  # Logger instance
         
-        await instance.__set_mbta_trips_by_trip_names(trips_names)
+        await instance.__update_mbta_trips_by_trip_names(trips_names)
 
         return instance
 
-    async def __set_mbta_trips_by_trip_names(self, trips_names: list[str]) -> None:
+    async def __update_mbta_trips_by_trip_names(self, trips_names: list[str]) -> None:
         self._logger.debug("Updating MBTA trips")
         try:
             mbta_trips, _ = await self.__fetch_trips_by_names(trips_names)
             if mbta_trips:
                 for mbta_trip in mbta_trips:
-                    new_trip = Trip()
-                    new_trip.mbta_trip = mbta_trip
-                    self._trips[mbta_trip.id] = new_trip    
+                    if MBTATripsRegistry.get_mbta_trip(mbta_trip.id):
+                        MBTATripsRegistry.register_mbta_trip(mbta_trip=mbta_trip)
+                    self._mbta_trips_ids.append(mbta_trip.id)
             else:
                 self._logger.error(f"Invalid MBTA trip name {trips_names}")
-                raise MBTATripError(f"Invalid MBTA trip name {trips_names}")
+            #    raise MBTATripError(f"Invalid MBTA trip name {trips_names}")
             
         except Exception as e:
             self._logger.error(f"Error updating MBTA trips: {e}")
@@ -87,36 +70,35 @@ class TrainsHandler(MBTABaseHandler):
         try:
            
             now = datetime.now().astimezone()
+            
+            # Initialize trips
+            trips: dict[str, Trip] = {}
                     
             for i in range(7):
                 date_to_try = (now + timedelta(days=i)).strftime('%Y-%m-%d')
 
                 params = {
-                    'filter[trip]': ','.join(self._trips.keys()),
+                    'filter[trip]': ','.join(self._mbta_trips_ids),
                     'filter[date]': date_to_try
                 }
             
-                self._trips = await super()._update_scheduling(params)
+                updated_trips = await super()._update_scheduling(trips=trips,params=params)
         
-                fileter_trips = super()._filter_trips(remove_departed=False)
+                # Filter out departed trips
+                filtered_trips = super()._filter_trips(trips=updated_trips, remove_departed=False)
                 
-                if len(fileter_trips) == 0:
+                if len(filtered_trips) == 0:
                     if i == 6:
-                        self._logger.error(f"Error retrieving scheduling for {self._trips.keys()}")
-                        raise MBTATripError("No trip between the provided stops in the next 7 days")
+                        self._logger.error(f"Error retrieving scheduling for {trips.keys()}")
+                    #    raise MBTATripError("No trip between the provided stops in the next 7 days")
                     continue
-                
-                self._trips = fileter_trips
-                self._trips = super()._sort_trips(StopType.DEPARTURE)   
-                                
+                             
                 break
             
-            for trip_id, trip in self._trips.items():
-                
-                await super()._set_mbta_trip(trip_id)
-                await super()._update_trip_info(trip)                    
-            
-            return [value for value in self._trips.values()]
+            # Update trip details
+            detailed_trips = await super()._update_details(trips=filtered_trips)
+                     
+            return list(detailed_trips.values())
             
         except Exception as e:
             self._logger.error(f"Error updating trips scheduling and info: {e}")

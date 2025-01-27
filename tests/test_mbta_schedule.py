@@ -1,3 +1,4 @@
+from datetime import datetime
 import pytest
 from typing import Dict
 
@@ -11,8 +12,16 @@ def test_mbta_schedule_init():
 
     # Test expected attributes
     assert schedule.id == VALID_SCHEDULE_RESPONSE_DATA["id"]
-    assert schedule.arrival_time == VALID_SCHEDULE_RESPONSE_DATA.get("attributes", {}).get("arrival_time", "")
-    assert schedule.departure_time == VALID_SCHEDULE_RESPONSE_DATA.get("attributes", {}).get("departure_time", "")
+    arrival_time = VALID_SCHEDULE_RESPONSE_DATA.get("attributes", {}).get("arrival_time")
+    departure_time = VALID_SCHEDULE_RESPONSE_DATA.get("attributes", {}).get("departure_time")
+    if arrival_time:
+        assert schedule.arrival_time == datetime.fromisoformat(arrival_time)
+    else:
+        assert schedule.arrival_time is None
+    if departure_time:
+        assert schedule.departure_time == datetime.fromisoformat(departure_time)
+    else:
+        assert schedule.departure_time is None 
     assert schedule.direction_id == VALID_SCHEDULE_RESPONSE_DATA.get("attributes", {}).get("direction_id", 0)
     assert schedule.drop_off_type == VALID_SCHEDULE_RESPONSE_DATA.get("attributes", {}).get("drop_off_type", "")
     assert schedule.pickup_type == VALID_SCHEDULE_RESPONSE_DATA.get("attributes", {}).get("pickup_type", "")

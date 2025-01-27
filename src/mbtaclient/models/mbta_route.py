@@ -5,10 +5,8 @@ class MBTARoute:
     """A route object to hold information about a route."""
 
     ROUTE_TYPES= {
-        # 0: 'Light Rail',   # Example: Green Line
-        # 1: 'Heavy Rail',   # Example: Red Line
-        0: 'Subway (Light Rail)',   
-        1: 'Subway (Heavy Rail)',  
+        0: 'Light Rail',   
+        1: 'Heavy Rail',  
         2: 'Commuter Rail',
         3: 'Bus',
         4: 'Ferry'
@@ -36,13 +34,13 @@ class MBTARoute:
             # Log the exception with traceback
             logger = logging.getLogger(__name__)
             logger.error(f"Error initializing {self.__class__.__name__}: {e}", exc_info=True)
-            # Re-raise the exception if needed or handle accordingly
-            raise
         
     def __repr__(self) ->  Optional[str]:
-        return (f"MBTAroute(id={self.id}, long_name={self.long_name})")
+        return (f"MBTAroute(id={self.id})")
 
     @staticmethod
     def get_route_type_desc_by_type_id(route_type: int) ->  Optional[str]:
         """Get a description of the route type."""
         return MBTARoute.ROUTE_TYPES.get(route_type, 'Unknown')
+    
+
