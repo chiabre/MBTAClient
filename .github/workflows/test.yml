@@ -48,7 +48,7 @@ jobs:
 
       - name: Run tests with pytest
         env:
-          TEST_TOKEN: ${{ secrets.MBTA_API_KEY }}
+          API_KEY: ${{ secrets.MBTA_API_KEY }}
         run: |
           pytest --cov-report=html:reports/coverage/
 
