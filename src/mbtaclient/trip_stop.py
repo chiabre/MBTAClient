@@ -23,7 +23,7 @@ class TripStopTime:
         self.updated_time: Optional[datetime] = None
 
     @property
-    def delta(self) -> Optional[timedelta]:
+    def deltatime(self) -> Optional[timedelta]:
         if self.original_time and self.updated_time:
             return self.original_time - self.updated_time
         return None
@@ -111,14 +111,14 @@ class TripStop:
 
     @property
     def deltatime(self) -> Optional[timedelta]:
-        if self.arrival_time and self.arrival_time.delta:
-            return self.arrival_time.delta
-        if self.departure_time and self.departure_time.delta:
-            return self.departure_time.delta
+        if self.arrival_time and self.arrival_time.deltatime:
+            return self.arrival_time.deltatime
+        if self.departure_time and self.departure_time.deltatime:
+            return self.departure_time.deltatime
         return None
 
     @property
     def time_to(self) -> Optional[timedelta]:
         if self.time:
-            return self.time - datetime.now().astimezone()
+            return self.time.astimezone() - datetime.now().astimezone()
         return None
