@@ -39,4 +39,4 @@ class MBTAVehicle:
             logger.error(f"Error initializing {self.__class__.__name__}: {e}", exc_info=True)
 
     def __repr__(self) -> str:
-        return (f"MBTAVehicles:{self.id})")
+        return (f"MBTAVehicles:{self.id}")
