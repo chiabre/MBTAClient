@@ -47,6 +47,8 @@ jobs:
           mypy . --show-error-codes --no-error-summary >> reports/mypy/index.txt
 
       - name: Run tests with pytest
+        env:
+          TEST_TOKEN: ${{ secrets.MBTA_API_KEY }}
         run: |
           pytest --cov-report=html:reports/coverage/
 
