@@ -1,8 +1,6 @@
 import logging
 from typing import Any, Optional
 
-
-
 class MBTAStop:
     """A stop object to hold information about a stop."""
 
@@ -31,11 +29,10 @@ class MBTAStop:
             # Log the exception with traceback
             logger = logging.getLogger(__name__)
             logger.error(f"Error initializing {self.__class__.__name__}: {e}", exc_info=True)
-            # Re-raise the exception if needed or handle accordingly
-            raise
+
         
     def __repr__(self) -> str:
-        return (f"MBTAStop(id={self.id}, name={self.name},)")
+        return (f"MBTAStop(name={self.name})")
 
 class MBTAStopError(Exception):
     pass

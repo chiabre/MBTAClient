@@ -11,3 +11,4 @@ setuptools
 wheel
 twine
 build
+python-dotenv

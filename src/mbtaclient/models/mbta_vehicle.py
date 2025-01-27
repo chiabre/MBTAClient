@@ -1,4 +1,3 @@
-from datetime import datetime
 import logging
 from typing import Any, Optional
 
@@ -25,22 +24,14 @@ class MBTAVehicle:
 
             # Relationships
             relationships = vehicle.get('relationships', {})
-            self.trip_id: Optional[str] = (
-                relationships.get('trip', {}).get('data', {}).get('id', None) if (relationships.get('trip') and relationships.get('trip').get('data')) else None
-            )
-            self.stop_id: Optional[str] = (
-                relationships.get('stop', {}).get('data', {}).get('id', None) if (relationships.get('stop') and relationships.get('stop').get('data')) else None
-            )
-            self.route_id: Optional[str] = (
-                relationships.get('route', {}).get('data', {}).get('id', None) if (relationships.get('route') and relationships.get('route').get('data')) else None
-            )
+            self.trip_id: Optional[str] = relationships.get('trip', {}).get('data', {}).get('id', None) if relationships.get('trip').get('data') else None
+            self.stop_id: Optional[str] = relationships.get('stop', {}).get('data', {}).get('id', None) if relationships.get('stop').get('data') else None
+            self.route_id: Optional[str] = relationships.get('route', {}).get('data', {}).get('id', None) if relationships.get('route').get('data') else None
             
         except Exception as e:
             # Log the exception with traceback
             logger = logging.getLogger(__name__)
             logger.error(f"Error initializing {self.__class__.__name__}: {e}", exc_info=True)
-            # Re-raise the exception if needed or handle accordingly
-            raise
 
     def __repr__(self) -> str:
         return (f"MBTAVehicles(id={self.id}), label={self.label} ")

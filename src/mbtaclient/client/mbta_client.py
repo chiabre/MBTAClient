@@ -9,7 +9,7 @@ from ..models.mbta_schedule import MBTASchedule
 from ..models.mbta_prediction import MBTAPrediction
 from ..models.mbta_trip import MBTATrip
 from ..models.mbta_alert import MBTAAlert
-from .mbta_cache_manager import CacheEvent, CacheType, MBTACacheManager, memoize_async_mbta_client_cache
+from .mbta_cache_manager import MBTACacheManager, CacheEvent
 from .mbta_session_manager import MBTASessionManager
 
 MBTA_DEFAULT_HOST = "api-v3.mbta.com"
@@ -106,7 +106,7 @@ class MBTAClient:
 
         url = f"https://{MBTA_DEFAULT_HOST}/{path}"
         
-        cached_data, timestamp, last_modified = self._cache_manager.get_server_cache_data(path, params)
+        cached_data, timestamp, last_modified = self._cache_manager.get_cached_data(path, params)
         if last_modified:
             headers["If-Modified-Since"] = last_modified
         headers["Accept-Encoding"] = "gzip"
@@ -127,12 +127,12 @@ class MBTAClient:
                 
                 if response.status == 429:
                     self._logger.error("Rate limit exceeded (HTTP 429).")
-                    raise MBTATooManyRequestsError("Rate limit exceeded (HTTP 429). Please use API key.")
+                    raise MBTATooManyRequestsError("Rate limit exceeded (HTTP 429). Please uscheck your API key.")
 
                 if response.status == 304:
                     if cached_data is not None:
                         if  self._cache_manager.stats:
-                            self._cache_manager.cache_stats.increase_counter(CacheType.SERVER,CacheEvent.HIT)
+                            self._cache_manager.cache_stats.increase_counter(CacheEvent.HIT)
                         return cached_data, timestamp
                     else:
                         raise MBTAClientError(f"Cache empty for 304 response: {url}")
@@ -142,33 +142,31 @@ class MBTAClient:
                 data = await response.json()
                 last_modified = response.headers.get("Last-Modified")
                 if last_modified:
-                    timestamp = self._cache_manager.update_server_cache(path=path, params=params, data=data, last_modified=last_modified)
+                    timestamp = self._cache_manager.update_cache(path=path, params=params, data=data, last_modified=last_modified)
                 if  self._cache_manager.stats:
-                    self._cache_manager.cache_stats.increase_counter(CacheType.SERVER,CacheEvent.MISS)
+                    self._cache_manager.cache_stats.increase_counter(CacheEvent.MISS)
                 return data, timestamp
 
         except TimeoutError as error:
             self._logger.error(f"Timeout during request to {url}: {error}")
             raise TimeoutError
+        
         except Exception as error:
             self._logger.error(f"Error during request to {url}: {error}")
             raise MBTAClientError("Unexpected error during request.") from error
 
-    @memoize_async_mbta_client_cache()
     async def fetch_route(self, id: str, params: Optional[Dict[str, Any]] = None) -> Tuple[MBTARoute, float]:
         """Fetch a MBTARoute by its ID."""
         self._logger.debug(f"Fetching MBTA route with ID: {id}")
         data, timestamp = await self._fetch_data(f"{ENDPOINTS['ROUTES']}/{id}", params)
         return MBTARoute(data["data"]), timestamp
 
-    @memoize_async_mbta_client_cache()
     async def fetch_trip(self, id: str, params: Optional[Dict[str, Any]] = None) -> Tuple[MBTATrip, float]:
         """Fetch a MBTATrip by its ID."""
         self._logger.debug(f"Fetching MBTA trip with ID: {id}")
         data, timestamp = await self._fetch_data(f"{ENDPOINTS['TRIPS']}/{id}", params)
         return MBTATrip(data["data"]), timestamp
-
-    @memoize_async_mbta_client_cache()
+    
     async def fetch_stop(self, id: str, params: Optional[Dict[str, Any]] = None) -> Tuple[MBTAStop, float]:
         """Fetch a MBTAStop by its ID."""
         self._logger.debug(f"Fetching MBTA stop with ID: {id}")
@@ -181,28 +179,24 @@ class MBTAClient:
         data, timestamp = await self._fetch_data(ENDPOINTS['VEHICLES']/{id}, params)
         return MBTAVehicle(data['data']), timestamp
 
-    @memoize_async_mbta_client_cache()
     async def fetch_routes(self, params: Optional[Dict[str, Any]] = None) -> Tuple[list[MBTARoute], float]:
         """Fetch a list of MBTARoute."""
         self._logger.debug("Fetching all MBTA routes")
         data, timestamp = await self._fetch_data(ENDPOINTS["ROUTES"], params)
         return [MBTARoute(item) for item in data["data"]], timestamp
 
-    @memoize_async_mbta_client_cache()
     async def fetch_trips(self, params: Optional[Dict[str, Any]] = None) -> Tuple[list[MBTATrip], float]:
         """Fetch a list of MBTATrip."""
         self._logger.debug("Fetching MBTA trips")
         data, timestamp = await self._fetch_data(ENDPOINTS["TRIPS"], params)
         return [MBTATrip(item) for item in data["data"]], timestamp
 
-    @memoize_async_mbta_client_cache()
     async def fetch_stops(self, params: Optional[Dict[str, Any]] = None) -> Tuple[list[MBTAStop], float]:
         """Fetch a list of MBTAStops."""
         self._logger.debug("Fetching MBTA stops")
         data, timestamp = await self._fetch_data(ENDPOINTS['STOPS'], params)
         return [MBTAStop(item) for item in data["data"]], timestamp
 
-    @memoize_async_mbta_client_cache()
     async def fetch_schedules(self, params: Optional[Dict[str, Any]] = None) -> Tuple[list[MBTASchedule], float]:
         """Fetch a list of MBTASchedules."""
         self._logger.debug("Fetching MBTA schedules")
