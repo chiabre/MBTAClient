@@ -71,7 +71,7 @@ class MBTAAlert:
             logger.error(f"Error initializing {self.__class__.__name__}: {e}", exc_info=True)
         
     def __repr__(self) -> str:
-        return (f"MBTAAlert(id={self.id})")
+        return (f"MBTAAlert:{self.id}")
 
 class MBTAAlertsInformedEntity:
     def __init__(

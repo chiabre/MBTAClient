@@ -57,7 +57,7 @@ class TripStop:
         self.departure_time = TripStopTime(departure_time) if departure_time else None
 
     def __repr__(self) -> str:
-        return (f"TripStop(stop_type={self.stop_type.value}, mbta_stop_id={self.mbta_stop_id}, stop_sequence={self.stop_sequence},time={self.time.replace(tzinfo=None)}, time_to={self.time_to.seconds}, deltatime={self.deltatime.seconds if self.deltatime else None})"
+        return (f"TripStop({self.stop_type.value}): {self.mbta_stop_id} @ {self.time.replace(tzinfo=None)}"
         )
         
     def update_stop(self, mbta_stop_id: str ,stop_sequence: int, arrival_time: Optional[datetime] = None, departure_time: Optional[datetime] = None, ) -> None:

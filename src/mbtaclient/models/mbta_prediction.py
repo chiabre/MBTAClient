@@ -50,7 +50,7 @@ class MBTAPrediction:
             logger.error(f"Error initializing {self.__class__.__name__}: {e}", exc_info=True)
 
     def __repr__(self) -> str:
-        return (f"MBTAPrediction(id={self.id}, route_id={self.route_id}, stop_id={self.stop_id})")
+        return (f"MBTAPrediction:{self.id}")
 
 class MBTAPredictionScheduleRelationship(Enum):
     ADDED = "ADDED"  # An extra trip added in addition to a running schedule.
