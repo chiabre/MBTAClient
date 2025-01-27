@@ -23,7 +23,7 @@ class TripStopTime:
         self.updated_time: Optional[datetime] = None
 
     @property
-    def delta(self) -> Optional[timedelta]:
+    def deltatime(self) -> Optional[timedelta]:
         if self.original_time and self.updated_time:
             return self.original_time - self.updated_time
         return None
@@ -57,7 +57,7 @@ class TripStop:
         self.departure_time = TripStopTime(departure_time) if departure_time else None
 
     def __repr__(self) -> str:
-        return (f"TripStop(stop_type={self.stop_type.value}, mbta_stop_id={self.mbta_stop_id}, stop_sequence={self.stop_sequence},time={self.time.replace(tzinfo=None)}, time_to={self.time_to.seconds}, deltatime={self.deltatime.seconds if self.deltatime else None})"
+        return (f"TripStop({self.stop_type.value}): {self.mbta_stop_id} @ {self.time.replace(tzinfo=None)}"
         )
         
     def update_stop(self, mbta_stop_id: str ,stop_sequence: int, arrival_time: Optional[datetime] = None, departure_time: Optional[datetime] = None, ) -> None:
@@ -87,7 +87,11 @@ class TripStop:
     @property
     def mbta_stop(self) -> Optional[MBTAStop]:
         """Retrieve the MBTAStop object for this TripStop."""
-        return MBTAStopObjStore.get_by_id(self.mbta_stop_id)
+        mbta_stop = MBTAStopObjStore.get_by_id(self.mbta_stop_id)
+        if mbta_stop:
+            return mbta_stop
+        #self.mbta_route_id = None
+        return None
 
     @mbta_stop.setter
     def mbta_stop(self, mbta_stop: "MBTAStop") -> None:
@@ -111,14 +115,14 @@ class TripStop:
 
     @property
     def deltatime(self) -> Optional[timedelta]:
-        if self.arrival_time and self.arrival_time.delta:
-            return self.arrival_time.delta
-        if self.departure_time and self.departure_time.delta:
-            return self.departure_time.delta
+        if self.arrival_time and self.arrival_time.deltatime:
+            return self.arrival_time.deltatime
+        if self.departure_time and self.departure_time.deltatime:
+            return self.departure_time.deltatime
         return None
 
     @property
     def time_to(self) -> Optional[timedelta]:
         if self.time:
-            return self.time - datetime.now().astimezone()
+            return self.time.astimezone() - datetime.now().astimezone()
         return None

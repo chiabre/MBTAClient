@@ -3,7 +3,7 @@ import logging
 from typing import Optional
 import aiohttp
 
-MAX_CONCURRENT_REQUESTS = 3
+MAX_CONCURRENT_REQUESTS = 5
 REQUEST_TIMEOUT = 10
 
 class MBTASessionManager:

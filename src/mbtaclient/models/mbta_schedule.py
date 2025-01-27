@@ -43,6 +43,6 @@ class MBTASchedule:
             logger.error(f"Error initializing {self.__class__.__name__}: {e}", exc_info=True)
 
     def __repr__(self) -> str:
-        return (f"MBTASchedule(id={self.id}, route_id={self.route_id}, stop_id={self.stop_id})")
+        return (f"MBTASchedule:{self.id}")
 
 

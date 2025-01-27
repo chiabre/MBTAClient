@@ -29,7 +29,7 @@ class MBTATrip:
             logger.error(f"Error initializing {self.__class__.__name__}: {e}", exc_info=True)
         
     def __repr__(self) -> str:
-        return (f"MBTATrip(id={self.id}, headsign={self.headsign})")
+        return (f"MBTATrip:{self.id}")
 
 class MBTATripError(Exception):
     pass

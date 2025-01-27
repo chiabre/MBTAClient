@@ -21,4 +21,4 @@ def test_mbta_trip_init():
 
     # Confirm the __repr__ method includes key identifying attributes
     repr_string = repr(trip)
-    assert f"MBTATrip(id={trip.id}, headsign={trip.headsign})" in repr_string
+    assert f"MBTATrip:{trip.id}" in repr_string

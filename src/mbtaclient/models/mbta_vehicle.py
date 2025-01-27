@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 from typing import Any, Optional
 
@@ -18,7 +19,11 @@ class MBTAVehicle:
             self.occupancy_status: Optional[str] = attributes.get('occupancy_status', None)
             self.revenue: Optional[int] = attributes.get('revenue', None)
             self.speed: Optional[str] = attributes.get('speed', None)
-            self.updated_at: Optional[str] = attributes.get('updated_at', None)
+            self.updated_at: Optional[datetime] = (
+                datetime.fromisoformat(attributes.get('updated_at'))
+                if attributes.get('updated_at') is not None
+                else None
+            )
             self.latitude: Optional[str] = attributes.get('latitude', None)
             self.longitude: Optional[str] = attributes.get('longitude', None)
 
@@ -34,4 +39,4 @@ class MBTAVehicle:
             logger.error(f"Error initializing {self.__class__.__name__}: {e}", exc_info=True)
 
     def __repr__(self) -> str:
-        return (f"MBTAVehicles(id={self.id}), label={self.label} ")
+        return (f"MBTAVehicles:{self.id}")

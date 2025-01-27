@@ -32,7 +32,7 @@ class MBTAStop:
 
         
     def __repr__(self) -> str:
-        return (f"MBTAStop(name={self.name})")
+        return (f"MBTAStop:{self.id}")
 
 class MBTAStopError(Exception):
     pass

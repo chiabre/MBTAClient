@@ -36,7 +36,7 @@ class MBTARoute:
             logger.error(f"Error initializing {self.__class__.__name__}: {e}", exc_info=True)
         
     def __repr__(self) ->  Optional[str]:
-        return (f"MBTAroute(id={self.id})")
+        return (f"MBTAroute:{self.id}")
 
     @staticmethod
     def get_route_type_desc_by_type_id(route_type: int) ->  Optional[str]:
