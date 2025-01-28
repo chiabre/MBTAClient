@@ -87,11 +87,7 @@ class TripStop:
     @property
     def mbta_stop(self) -> Optional[MBTAStop]:
         """Retrieve the MBTAStop object for this TripStop."""
-        mbta_stop = MBTAStopObjStore.get_by_id(self.mbta_stop_id)
-        if mbta_stop:
-            return mbta_stop
-        #self.mbta_route_id = None
-        return None
+        return MBTAStopObjStore.get_by_id(self.mbta_stop_id)
 
     @mbta_stop.setter
     def mbta_stop(self, mbta_stop: "MBTAStop") -> None:
