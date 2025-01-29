@@ -2,6 +2,8 @@ from datetime import datetime
 from typing import Optional
 import logging
 
+from mbtaclient.trip_stop import StopType
+
 from ..client.mbta_client import MBTAClient
 from ..handlers.base_handler import MBTABaseHandler
 
@@ -17,6 +19,7 @@ class TripsHandler(MBTABaseHandler):
         mbta_client: MBTAClient,
         arrival_stop_name: str,
         max_trips: Optional[int] = 5,
+        sort_by: Optional[StopType] = StopType.DEPARTURE,
         logger: Optional[logging.Logger] = None)-> "TripsHandler":
 
         """Asynchronous factory method to initialize TripsHandler."""
@@ -27,6 +30,7 @@ class TripsHandler(MBTABaseHandler):
             max_trips=max_trips,
             logger=logger)
 
+        instance._sort_by = sort_by
         instance._logger = logger or logging.getLogger(__name__)  # Logger instance
 
         return instance
@@ -47,8 +51,9 @@ class TripsHandler(MBTABaseHandler):
 
             # Filter out departed trips
             filtered_trips = super()._filter_and_sort_trips(
-                trips=updated_trips, 
-                remove_departed=True)
+                trips=updated_trips,
+                remove_departed=True,
+                sort_by=self._sort_by)
 
             # Update trip details
             detailed_trips = await super()._update_details(trips=filtered_trips)
@@ -56,7 +61,8 @@ class TripsHandler(MBTABaseHandler):
             # Filter out departed trips again
             filtered_detailed_trips = super()._filter_and_sort_trips(
                 trips=detailed_trips,
-                remove_departed=True)
+                remove_departed=True,
+                sort_by=self._sort_by)
 
             # Limit trips to the maximum allowed
             limited_trips = dict(list(filtered_detailed_trips.items())[:self._max_trips])
