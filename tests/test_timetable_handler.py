@@ -49,8 +49,7 @@ async def test_handler(stop_name, route_type):
         handler: TimetableHandler = await TimetableHandler.create(
             stop_name=stop_name,
             mbta_client=mbta_client,
-            max_trips=max_trips,
-            departures=True
+            max_trips=max_trips
         )
         
         # Fetch trips using the handler

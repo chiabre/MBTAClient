@@ -38,9 +38,9 @@ async def test_handler(departure_stop_name, arrival_stop_name, train):
     # Initialize MBTA Cache Manager and Client
     cache_manager = MBTACacheManager(stats_interval=10)
     async with MBTAClient(cache_manager=cache_manager, api_key=API_KEY) as mbta_client:
-        
+
         print(f"Testing TrinHandler for : {departure_stop_name} {arrival_stop_name} {train}")
-        
+
         # Configure the handler for the given stop
         handler: TrainsHandler = await TrainsHandler.create(
             departure_stop_name=departure_stop_name,
@@ -48,7 +48,7 @@ async def test_handler(departure_stop_name, arrival_stop_name, train):
             arrival_stop_name=arrival_stop_name,
             trips_names = [train]
         )
-        
+
         # Fetch trips using the handler
         trips = await handler.update()
         
