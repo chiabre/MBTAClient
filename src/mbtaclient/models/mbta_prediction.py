@@ -18,7 +18,7 @@ class MBTAPrediction:
             self.status: Optional[str] = attributes.get('status', None)
             self.schedule_relationship: Optional[str] = attributes.get('schedule_relationship', None)
             self.revenue_status: Optional[str] = attributes.get('revenue_status', None)
-            self.direction_id: Optional[int] = attributes.get('direction_id', None)           
+            self.direction_id: Optional[int] = attributes.get('direction_id', None)        
             self.departure_uncertainty: Optional[int] = attributes.get('departure_uncertainty', None)
             self.departure_time: Optional[datetime] = (
                 datetime.fromisoformat(attributes.get('departure_time'))
@@ -52,7 +52,7 @@ class MBTAPrediction:
     def __repr__(self) -> str:
         return (f"MBTAPrediction:{self.id}")
 
-class MBTAPredictionScheduleRelationship(Enum):
+class MBTAScheduleRelationship(Enum):
     ADDED = "ADDED"  # An extra trip added in addition to a running schedule.
     CANCELLED = "CANCELLED"  # A trip that existed in the schedule but was removed.
     NO_DATA = "NO_DATA"  # No data given for this stop; no realtime info available.

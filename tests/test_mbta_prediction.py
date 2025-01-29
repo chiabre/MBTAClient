@@ -1,5 +1,4 @@
 from datetime import datetime
-import pytest
 from src.mbtaclient.models.mbta_prediction import MBTAPrediction  # Adjust import path as per your project structure
 from tests.mock_data import VALID_PREDICTION_RESPONSE_DATA  # Mock data import
 
