@@ -179,7 +179,7 @@ class Trip:
        return self.departure_stop.time if self.departure_stop and self.departure_stop.time else None
 
     @property
-    def departure_deltatime(self) -> Optional[int]:
+    def departure_deltatime(self) -> Optional[timedelta]:
         return self.departure_stop.deltatime if self.departure_stop and self.departure_stop.deltatime else None
 
     @property
