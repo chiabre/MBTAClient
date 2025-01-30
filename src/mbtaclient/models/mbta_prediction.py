@@ -52,6 +52,12 @@ class MBTAPrediction:
     def __repr__(self) -> str:
         return (f"MBTAPrediction:{self.id}")
 
+    def __eq__(self, other: object) -> bool:
+        """Defines equality based on the prediction ID."""
+        if isinstance(other, MBTAPrediction):
+            return self.id == other.id
+        return False
+    
 class MBTAScheduleRelationship(Enum):
     ADDED = "ADDED"  # An extra trip added in addition to a running schedule.
     CANCELLED = "CANCELLED"  # A trip that existed in the schedule but was removed.

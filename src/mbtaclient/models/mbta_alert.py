@@ -73,6 +73,12 @@ class MBTAAlert:
     def __repr__(self) -> str:
         return (f"MBTAAlert:{self.id}")
 
+    def __eq__(self, other: object) -> bool:
+        """Defines equality based on the alert ID."""
+        if isinstance(other, MBTAAlert):
+            return self.id == other.id
+        return False
+    
 class MBTAAlertsInformedEntity:
     def __init__(
         self,

@@ -29,10 +29,12 @@ class MBTAStop:
             # Log the exception with traceback
             logger = logging.getLogger(__name__)
             logger.error(f"Error initializing {self.__class__.__name__}: {e}", exc_info=True)
-
         
     def __repr__(self) -> str:
         return (f"MBTAStop:{self.id}")
 
-class MBTAStopError(Exception):
-    pass
+    def __eq__(self, other: object) -> bool:
+        """Defines equality based on the stop ID."""
+        if isinstance(other, MBTAStop):
+            return self.id == other.id
+        return False
