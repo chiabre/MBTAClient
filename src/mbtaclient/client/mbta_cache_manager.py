@@ -75,9 +75,9 @@ class MBTACacheManager:
         return None, None, None
 
     def update_cache(
-        self, 
-        path: str, 
-        params: Optional[Dict[str, Any]], 
+        self,
+        path: str,
+        params: Optional[Dict[str, Any]],
         data: Any, 
         last_modified: Optional[str] = None) -> float:
         """Update the server-side cache with data."""
