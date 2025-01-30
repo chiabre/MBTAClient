@@ -11,7 +11,7 @@ from ..mbta_object_store import MBTARouteObjStore, MBTAStopObjStore
 from ..client.mbta_client import MBTAClient
 
 from ..trip import Trip
-from ..trip_stop import StopType
+from ..stop import StopType
 
 from ..models.mbta_stop import MBTAStop
 from ..models.mbta_schedule import MBTASchedule

@@ -7,7 +7,7 @@ from .models.mbta_trip import MBTATrip
 from .models.mbta_vehicle import MBTAVehicle
 from .client.mbta_client import MBTAClient
 from .trip import Trip
-from .trip_stop import TripStop
+from .stop import Stop, StopType
 from .handlers.trips_handler import TripsHandler
 from .handlers.trains_handler import TrainsHandler
 from .handlers.timetable_handler import TimetableHandler
@@ -22,11 +22,9 @@ __all__ = [
     "MBTAVehicle",
     "MBTAClient",
     "Trip",
-    "TripStop",
+    "Stop",
+    "StopType",
     "TripsHandler",
     "TrainsHandler",
     "TimetableHandler",
 ]
-
-
-
