@@ -117,11 +117,11 @@ class Trip:
             return self.route_long_name
         elif self.mbta_route and self.mbta_route.type == 3: #bus
             return self.route_short_name
-    
+
     @property
     def route_id(self) -> Optional[str]:
         return self.mbta_route.id if self.mbta_route and self.mbta_route.id else None
-    
+
     @property
     def route_short_name(self) -> Optional[str]:
         return self.mbta_route.short_name if self.mbta_route and self.mbta_route.short_name else None
@@ -146,11 +146,11 @@ class Trip:
     @property
     def vehicle_current_status(self) -> Optional[str]:
         return self.mbta_vehicle.current_status if self.mbta_vehicle and self.mbta_vehicle.current_status else None
- 
+
     @property
     def vehicle_current_stop_sequence(self) -> Optional[str]:
         return self.mbta_vehicle.current_stop_sequence if self.mbta_vehicle and self.mbta_vehicle.current_stop_sequence else None
-       
+
     @property
     def vehicle_longitude(self) -> Optional[float]:
         return self.mbta_vehicle.longitude if self.mbta_vehicle and self.mbta_vehicle.longitude else None
@@ -166,7 +166,7 @@ class Trip:
     @property
     def vehicle_updated_at(self) -> Optional[datetime]:
         return self.mbta_vehicle.updated_at if self.mbta_vehicle and self.mbta_vehicle.updated_at else None
-    
+
     #departure stop
     @property
     def departure_stop(self) -> Optional[Stop]:
@@ -191,7 +191,7 @@ class Trip:
     @property
     def departure_time_to(self) -> Optional[timedelta]:
         return self.departure_stop.time_to if self.departure_stop and self.departure_stop.time_to else None
-   
+
     @property
     def departure_status(self) -> Optional[str]:
         return self._get_stop_countdown(StopType.DEPARTURE) if self.departure_stop else None
@@ -220,14 +220,14 @@ class Trip:
     @property
     def arrival_time_to(self) -> Optional[timedelta]:
         return self.arrival_stop.time_to if self.arrival_stop and self.arrival_stop.time_to else None
-   
+
     @property
     def arrival_status(self) -> Optional[str]:
         return self._get_stop_countdown(StopType.ARRIVAL) if self.arrival_stop else None
-    
+
     def get_stop_by_type(self, stop_type: str) -> Optional[Stop]:
         return next((stop for stop in self.stops if stop and stop.stop_type == stop_type), None) 
-    
+
     def add_stop(self, stop_type: str, scheduling: Union[MBTASchedule, MBTAPrediction], mbta_stop_id: str) -> None:
         """Add or update a stop in the journey."""
         stop = self.get_stop_by_type(stop_type)
@@ -250,9 +250,9 @@ class Trip:
                 stop_sequence=scheduling.stop_sequence,
                 arrival_time=scheduling.arrival_time,
                 departure_time=scheduling.departure_time,
-                
+  
             )
-    
+
     def remove_stop_by_id(self, mbta_stop_id: str) -> None:
         self.stops = [stop for stop in self.stops if stop.mbta_stop.id != mbta_stop_id]
 
@@ -275,7 +275,7 @@ class Trip:
                 self.get_stop_id_by_stop_type(StopType.ARRIVAL)
             ] if stop_id is not None
         ]
-       
+
     def get_alert_header(self, alert_index: int) -> Optional[str]:
         if 0 <= alert_index < len(self.mbta_alerts):
             return self.mbta_alerts[alert_index].header
@@ -284,31 +284,47 @@ class Trip:
     def _get_stop_countdown(self, stop_type: StopType) -> Optional[str]:
         """Determine the countdown or status of a stop based on vehicle and time."""
         stop = self.get_stop_by_type(stop_type)
-        
+
         if not stop or not stop.time or not self.mbta_vehicle:
             return None
 
-        now = datetime.now().astimezone()
-        minutes = int((stop.time - now).total_seconds() // 60)
+        current_stop = self.mbta_vehicle.current_stop_sequence
+        status = self.mbta_vehicle.current_status
 
-        if self.mbta_vehicle.current_stop_sequence == stop.stop_sequence:
-            status = self.mbta_vehicle.current_status
+        now = datetime.now().astimezone()
+        minutes = int((stop.time - now).total_seconds() / 60)
+
+
+        if current_stop < stop.stop_sequence:
+            if minutes <= 0:
+                return "ARRIVING"
+            if minutes <= 19:
+                return f"{minutes + 1} MIN"
+            else:
+                 return "20+ MIN"
+
+        elif current_stop == stop.stop_sequence:
+
             if status == "STOPPED_AT":
                 if stop_type == StopType.DEPARTURE:
                     if minutes >= 5:
-                        return f"DEPARTING < {minutes + 1} min"
+                        return f"DEPARTING < {minutes + 1} MIN"
                     return "BOARDING"
-                else:
+                elif stop_type == StopType.ARRIVAL:
                     return "ARRIVED"
-            if status == "INCOMING_AT":
-                return "DUE"
-            if status == "IN_TRANSIT_TO":
-                if minutes >= 0:
-                    return f"ARRIVING < {minutes + 1} min"
-                else:
-                    return "ARRIVING"
 
-        if self.mbta_vehicle.current_stop_sequence and self.mbta_vehicle.current_stop_sequence > stop.stop_sequence:
-            return "DEPARTED" 
-        else: 
-            return "EN ROUTE"
+            if status == "INCOMING_AT":
+                return "INCOMING"
+
+            if status == "IN_TRANSIT_TO":
+                if minutes <= 0:
+                    return "ARRIVING"
+                if minutes <= 19:
+                    return f"ARRIVING < {minutes + 1} MIN"
+                else:
+                    return "20+ MIN"
+
+        elif current_stop > stop.stop_sequence:
+            return "DEPARTED"
+
+        return None
