@@ -40,3 +40,10 @@ class MBTAVehicle:
 
     def __repr__(self) -> str:
         return (f"MBTAVehicles:{self.id}")
+
+    def __eq__(self, other: object) -> bool:
+        """Defines equality based on the vehicle ID."""
+        if isinstance(other, MBTAVehicle):
+            return self.id == other.id
+        return False
+

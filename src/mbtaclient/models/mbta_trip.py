@@ -27,11 +27,12 @@ class MBTATrip:
             # Log the exception with traceback
             logger = logging.getLogger(__name__)
             logger.error(f"Error initializing {self.__class__.__name__}: {e}", exc_info=True)
-        
+
     def __repr__(self) -> str:
         return (f"MBTATrip:{self.id}")
 
-class MBTATripError(Exception):
-    pass
-
-
+    def __eq__(self, other: object) -> bool:
+        """Defines equality based on the trip ID."""
+        if isinstance(other, MBTATrip):
+            return self.id == other.id
+        return False

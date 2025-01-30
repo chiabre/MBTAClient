@@ -38,6 +38,12 @@ class MBTARoute:
     def __repr__(self) ->  Optional[str]:
         return (f"MBTAroute:{self.id}")
 
+    def __eq__(self, other: object) -> bool:
+        """Defines equality based on the route ID."""
+        if isinstance(other, MBTARoute):
+            return self.id == other.id
+        return False
+    
     @staticmethod
     def get_route_type_desc_by_type_id(route_type: int) ->  Optional[str]:
         """Get a description of the route type."""

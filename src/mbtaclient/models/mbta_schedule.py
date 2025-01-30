@@ -45,4 +45,8 @@ class MBTASchedule:
     def __repr__(self) -> str:
         return (f"MBTASchedule:{self.id}")
 
-
+    def __eq__(self, other: object) -> bool:
+        """Defines equality based on the schedule ID."""
+        if isinstance(other, MBTASchedule):
+            return self.id == other.id
+        return False
