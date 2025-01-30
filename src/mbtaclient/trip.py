@@ -28,7 +28,11 @@ class Trip:
     @property
     def mbta_route(self) -> Optional[MBTARoute]:
         """Retrieve the MBTARoute object for this Trip."""
-        return MBTARouteObjStore.get_by_id(self.mbta_route_id)
+        mbta_route = MBTARouteObjStore.get_by_id(self.mbta_route_id)
+        if mbta_route:
+            return mbta_route
+        #self.mbta_route_id = None
+        return None
     
     @mbta_route.setter
     def mbta_route(self, mbta_route: MBTARoute) -> None:
@@ -39,7 +43,11 @@ class Trip:
     @property
     def mbta_trip(self) -> Optional[MBTATrip]:
         """Retrieve the MBTARoute object for this Trip."""
-        return MBTATripObjStore.get_by_id(self.mbta_trip_id)
+        mbta_trip = MBTATripObjStore.get_by_id(self.mbta_trip_id)
+        if mbta_trip:
+            return mbta_trip
+        #self.mbta_trip = None
+        return None
     
     @mbta_trip.setter
     def mbta_trip(self, mbta_trip: MBTATrip) -> None:
@@ -179,7 +187,7 @@ class Trip:
        return self.departure_stop.time if self.departure_stop and self.departure_stop.time else None
 
     @property
-    def departure_deltatime(self) -> Optional[timedelta]:
+    def departure_deltatime(self) -> Optional[int]:
         return self.departure_stop.deltatime if self.departure_stop and self.departure_stop.deltatime else None
 
     @property

@@ -57,7 +57,7 @@ class MBTAPrediction:
         if isinstance(other, MBTAPrediction):
             return self.id == other.id
         return False
-    
+
 class MBTAScheduleRelationship(Enum):
     ADDED = "ADDED"  # An extra trip added in addition to a running schedule.
     CANCELLED = "CANCELLED"  # A trip that existed in the schedule but was removed.

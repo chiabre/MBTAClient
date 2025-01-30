@@ -46,3 +46,4 @@ class MBTAVehicle:
         if isinstance(other, MBTAVehicle):
             return self.id == other.id
         return False
+
