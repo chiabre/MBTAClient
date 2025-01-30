@@ -130,11 +130,11 @@ class Trip:
 
     @property
     def route_description(self) -> Optional[str]:
-        return MBTARoute.get_route_type_desc_by_type_id(self.mbta_route.type) if self.mbta_route else None
+        return MBTARoute.get_route_type_desc_by_type_id(self.mbta_route.type) if self.mbta_route and self.mbta_route.type is not None else None
 
     @property
     def route_type(self) -> Optional[str]:
-        return self.mbta_route.type if self.mbta_route and self.mbta_route.type else None
+        return self.mbta_route.type if self.mbta_route and self.mbta_route.type is not None else None
 
     # vehicle
     @property
