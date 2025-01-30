@@ -2,8 +2,6 @@ from dataclasses import dataclass, field
 from typing import Union, Optional
 from datetime import datetime, timedelta
 
-from .models.mbta_alert import MBTAAlert
-
 from .mbta_object_store import MBTAAlertObjStore, MBTARouteObjStore, MBTATripObjStore, MBTAVehicleObjStore
 
 from .trip_stop import TripStop, StopType
@@ -20,8 +18,8 @@ class Trip:
     """A class to manage a Trip with multiple stops."""
     mbta_route_id: Optional[str] = None
     mbta_trip_id: Optional[str] = None
-    mbta_vehicle_id: Optional[str] = None 
-    mbta_alerts_ids: list[Optional[str]] = field(default_factory=list)
+    mbta_vehicle_id: Optional[str] = None
+    mbta_alerts_ids: set[Optional[str]] = field(default_factory=set)
     stops: list[Optional['TripStop']] = field(default_factory=list)
 
     # registry 
@@ -78,7 +76,7 @@ class Trip:
     def mbta_alerts(self, mbta_alerts: list[MBTAAlert]) -> None:
         if mbta_alerts:
             for mbta_alert in mbta_alerts:
-                self.mbta_alerts_ids.append(mbta_alert.id)
+                self.mbta_alerts_ids.add(mbta_alert.id)
                 MBTAAlertObjStore.store(mbta_alert)
  
     # trip
