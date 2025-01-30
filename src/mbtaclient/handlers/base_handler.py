@@ -466,7 +466,8 @@ class MBTABaseHandler:
                 for trip_id, trip in sorted(
                     trips.items(),
                     key=lambda item: (
-                        item[1].get_stop_by_type(sort_by).time if item[1].get_stop_by_type(sort_by) is not None
+                        item[1].get_stop_by_type(sort_by).time 
+                        if item[1].get_stop_by_type(sort_by) and item[1].get_stop_by_type(sort_by).time is not None
                         else (today + timedelta(days=365)).astimezone()
                     )
                 )
