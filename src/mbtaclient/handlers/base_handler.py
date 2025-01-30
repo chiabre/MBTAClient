@@ -13,7 +13,7 @@ from ..client.mbta_client import MBTAClient
 from ..trip import Trip
 from ..trip_stop import StopType
 
-from ..models.mbta_stop import MBTAStop, MBTAStopError
+from ..models.mbta_stop import MBTAStop
 from ..models.mbta_schedule import MBTASchedule
 from ..models.mbta_prediction import MBTAPrediction, MBTAScheduleRelationship
 from ..models.mbta_alert import MBTAAlert, MBTAAlertPassengerActivity, MBTAAlertsInformedEntity
@@ -379,13 +379,15 @@ class MBTABaseHandler:
                     MBTAAlertPassengerActivity.EXIT in informed_entity.activities
                 )
             ) and (
-                (
-                    trip.departure_time and 
-                    mbta_alert.active_period_start <= trip.departure_time <= mbta_alert.active_period_end
-                ) or (
-                    trip.arrival_time and 
-                    mbta_alert.active_period_start <= trip.arrival_time <= mbta_alert.active_period_end
-                )
+                    (
+                        trip.departure_time and 
+                        mbta_alert.active_period_start <= trip.departure_time and 
+                        (mbta_alert.active_period_end is None or trip.departure_time <= mbta_alert.active_period_end)
+                    ) or (
+                        trip.arrival_time and 
+                        mbta_alert.active_period_start <= trip.arrival_time and 
+                        (mbta_alert.active_period_end is None or trip.arrival_time <= mbta_alert.active_period_end)
+                    )
             ):
                 return True
 
@@ -475,3 +477,6 @@ class MBTABaseHandler:
         except Exception as e:
             self._logger.error(f"Error sorting and cleaning trips: {e}")
             raise
+
+class MBTAStopError(Exception):
+    pass

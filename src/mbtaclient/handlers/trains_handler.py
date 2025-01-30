@@ -6,7 +6,7 @@ from ..mbta_object_store import MBTATripObjStore
 
 from ..client.mbta_client import MBTAClient
 from ..handlers.base_handler import MBTABaseHandler
-from ..models.mbta_trip import MBTATrip, MBTATripError
+from ..models.mbta_trip import MBTATrip
 from ..trip import Trip
 
 
@@ -105,3 +105,6 @@ class TrainsHandler(MBTABaseHandler):
         except Exception as e:
             self._logger.error(f"Error updating trips scheduling and info: {e}")
             raise
+
+class MBTATripError(Exception):
+    pass
