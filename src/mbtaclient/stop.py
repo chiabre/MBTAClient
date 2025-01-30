@@ -29,7 +29,7 @@ class TripStopTime:
         return None
 
 @dataclass
-class TripStop:
+class Stop:
     """
     Represents a stop on a trip.
     """

@@ -12,18 +12,18 @@ class CacheEvent(Enum):
     HIT = "hit"
     MISS = "miss"
     EVICTION = "eviction"
-    UPDATE = "update"   
+    UPDATE = "update"
 
 class MBTACacheManager:
     """
     Manages caching with expiration policies for server-side cache.
     """
-    
-    DEFAULT_MAX_CACHE_SIZE = 128
+
+    DEFAULT_MAX_CACHE_SIZE = 512
 
     def __init__(
-        self,  
-        max_cache_size: Optional[int] = DEFAULT_MAX_CACHE_SIZE, 
+        self,
+        max_cache_size: Optional[int] = DEFAULT_MAX_CACHE_SIZE,
         stats: Optional[bool] = True,
         stats_interval: Optional[int] = None,
         logger: Optional[logging.Logger] = None
@@ -33,15 +33,18 @@ class MBTACacheManager:
         self._logger = logger or logging.getLogger(__name__)
         self.stats = stats
         if stats:
-            self.cache_stats = MBTACacheManagerStats(max_cache_size=max_cache_size, stats_interval=stats_interval or None,logger=logger )
+            self.cache_stats = MBTACacheManagerStats(
+                max_cache_size=max_cache_size, 
+                stats_interval=stats_interval or None,
+                logger=logger )
         self._logger.debug("MBTACacheManager initialized")
-    
+
     @staticmethod
     def generate_cache_key(path: str, params: Optional[Dict[str, Any]]) -> str:
         """Generate a unique cache key based on the path and parameters."""
         key_data = {"path": path, "params": params or {}}
         return hashlib.sha256(json.dumps(key_data, sort_keys=True).encode()).hexdigest()
-    
+
     def _enforce_cache_size(self) -> None:
         """Ensure the cache does not exceed the maximum size."""
         while len(self._cache) > self._max_cache_size:
@@ -54,8 +57,10 @@ class MBTACacheManager:
         self._logger.debug("Cleaning up MBTACacheManager resources")
         self.cache_stats.print_stats()
         self._cache.clear()
-            
-    def get_cached_data(self, path: str, params: Optional[Dict[str, Any]]) -> Tuple[Optional[Any],Optional[float],Optional[str]]:
+
+    def get_cached_data(
+        self, path: str, 
+        params: Optional[Dict[str, Any]]) -> Tuple[Optional[Any],Optional[float],Optional[str]]:
         """Retrieve cached data from the server-side cache."""
         key = self.generate_cache_key(path, params)
         cached_entry = self._cache.get(key)
@@ -63,13 +68,18 @@ class MBTACacheManager:
             if self._is_cache_entry_valid(cached_entry):
                 self._cache.move_to_end(key, last=True)  # Move accessed item to the end (LRU)
                 return cached_entry["data"], cached_entry["timestamp"], cached_entry["last_modified"]
-            else: 
+            else:
                 del self._cache[key]
                 if self.stats:
                     self.cache_stats.increase_counter(CacheEvent.EVICTION)
         return None, None, None
 
-    def update_cache(self, path: str, params: Optional[Dict[str, Any]], data: Any, last_modified: Optional[str] = None) -> float:
+    def update_cache(
+        self,
+        path: str,
+        params: Optional[Dict[str, Any]],
+        data: Any, 
+        last_modified: Optional[str] = None) -> float:
         """Update the server-side cache with data."""
         key = self.generate_cache_key(path, params)
         timestamp = time.time()
@@ -78,7 +88,7 @@ class MBTACacheManager:
             "timestamp": timestamp,
             "last_modified": last_modified
         }
-        self._enforce_cache_size() 
+        self._enforce_cache_size()
         if self.stats:
             self.cache_stats.increase_counter(CacheEvent.UPDATE,cache_size=len(self._cache))
         return timestamp
@@ -86,12 +96,12 @@ class MBTACacheManager:
     def _is_cache_entry_valid(self, cached_entry: Dict) -> bool:
         """Check if the cache entry is valid."""
         # You can add custom logic here, e.g., check for expiration time
-        return True 
+        return True
 
 class MBTACacheManagerStats:
-    
+
     DEFAULT_STAS_INTERVAL = 1000
-        
+
     def __init__(
         self,
         max_cache_size: int,
@@ -105,7 +115,7 @@ class MBTACacheManagerStats:
         self._evictions = 0
         self._entries  = 0
         self._logger = logger or logging.getLogger(__name__)
-        
+
     @property
     def _requests(self) -> Optional[int]:
         return self._hits + self._misses
@@ -126,28 +136,25 @@ class MBTACacheManagerStats:
             self.print_stats()
 
     def print_stats(self):
-        
+
         hit_rate = (
             int((self._hits / self._requests) * 100)
             if self._requests > 0
             else 0
         )
-            
         usage = (
             int((self._entries / self.max_cache_size) * 100)
             if self.max_cache_size > 0
             else 0
         )
-
         self._logger.info("MBTA Cache Stats:")
         self._logger.info(f"{self._generate_bar(hit_rate)} {hit_rate}% hit rate ({self._hits}/{self._requests})")        
         self._logger.info(f"{self._generate_bar(usage)} {usage}% usage ({self._entries}/{self.max_cache_size})")
         if self._evictions >0:
-            self._logger.info(f"{self._evictions} evictions)")
+            self._logger.info(f"{self._evictions} evictions")
 
-        
     def _generate_bar(self, percentage):
         bar_length = 10
         filled_length = max(0, min(bar_length, int((percentage / 100) * bar_length)))
-        bar = "█" * filled_length + "░" * (bar_length - filled_length)
-        return f"|{bar}|"
+        bar_content = "█" * filled_length + "░" * (bar_length - filled_length)
+        return f"|{bar_content}|"

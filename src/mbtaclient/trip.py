@@ -2,11 +2,9 @@ from dataclasses import dataclass, field
 from typing import Union, Optional
 from datetime import datetime, timedelta
 
-from .models.mbta_alert import MBTAAlert
-
 from .mbta_object_store import MBTAAlertObjStore, MBTARouteObjStore, MBTATripObjStore, MBTAVehicleObjStore
 
-from .trip_stop import TripStop, StopType
+from .stop import Stop, StopType
 
 from .models.mbta_schedule import MBTASchedule
 from .models.mbta_prediction import MBTAPrediction
@@ -20,9 +18,9 @@ class Trip:
     """A class to manage a Trip with multiple stops."""
     mbta_route_id: Optional[str] = None
     mbta_trip_id: Optional[str] = None
-    mbta_vehicle_id: Optional[str] = None 
-    mbta_alerts_ids: list[Optional[str]] = field(default_factory=list)
-    stops: list[Optional['TripStop']] = field(default_factory=list)
+    mbta_vehicle_id: Optional[str] = None
+    mbta_alerts_ids: set[Optional[str]] = field(default_factory=set)
+    stops: list[Optional['Stop']] = field(default_factory=list)
 
     # registry 
     @property
@@ -78,7 +76,7 @@ class Trip:
     def mbta_alerts(self, mbta_alerts: list[MBTAAlert]) -> None:
         if mbta_alerts:
             for mbta_alert in mbta_alerts:
-                self.mbta_alerts_ids.append(mbta_alert.id)
+                self.mbta_alerts_ids.add(mbta_alert.id)
                 MBTAAlertObjStore.store(mbta_alert)
  
     # trip
@@ -171,7 +169,7 @@ class Trip:
     
     #departure stop
     @property
-    def departure_stop(self) -> Optional[TripStop]:
+    def departure_stop(self) -> Optional[Stop]:
         return self.get_stop_by_type(StopType.DEPARTURE) if self.get_stop_by_type(StopType.DEPARTURE) else None
 
     @property
@@ -200,7 +198,7 @@ class Trip:
 
     #arrival stop
     @property
-    def arrival_stop(self) -> Optional[TripStop]:
+    def arrival_stop(self) -> Optional[Stop]:
         return self.get_stop_by_type(StopType.ARRIVAL) if self.get_stop_by_type(StopType.ARRIVAL) else None
 
     @property
@@ -227,7 +225,7 @@ class Trip:
     def arrival_status(self) -> Optional[str]:
         return self._get_stop_countdown(StopType.ARRIVAL) if self.arrival_stop else None
     
-    def get_stop_by_type(self, stop_type: str) -> Optional[TripStop]:
+    def get_stop_by_type(self, stop_type: str) -> Optional[Stop]:
         return next((stop for stop in self.stops if stop and stop.stop_type == stop_type), None) 
     
     def add_stop(self, stop_type: str, scheduling: Union[MBTASchedule, MBTAPrediction], mbta_stop_id: str) -> None:
@@ -236,8 +234,8 @@ class Trip:
         
 
         if stop is None:
-            # Create a new TripStop
-            stop = TripStop(
+            # Create a new Stop
+            stop = Stop(
                 stop_type=stop_type,
                 mbta_stop_id=mbta_stop_id,
                 stop_sequence=scheduling.stop_sequence,
@@ -246,7 +244,7 @@ class Trip:
             )
             self.stops.append(stop)
         else:
-            # Update existing TripStop
+            # Update existing Stop
             stop.update_stop(
                 mbta_stop_id=mbta_stop_id,
                 stop_sequence=scheduling.stop_sequence,
