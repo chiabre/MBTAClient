@@ -22,7 +22,7 @@ class MBTACacheManager:
     DEFAULT_MAX_CACHE_SIZE = 512
 
     def __init__(
-        self,  
+        self,
         max_cache_size: Optional[int] = DEFAULT_MAX_CACHE_SIZE,
         stats: Optional[bool] = True,
         stats_interval: Optional[int] = None,
