@@ -164,6 +164,10 @@ class Trip:
         return self.mbta_vehicle.occupancy_status if self.mbta_vehicle and self.mbta_vehicle.occupancy_status else None
 
     @property
+    def vehicle_speed(self) -> Optional[str]:
+        return self.mbta_vehicle.speed if self.mbta_vehicle and self.mbta_vehicle.speed else None
+    
+    @property
     def vehicle_updated_at(self) -> Optional[datetime]:
         return self.mbta_vehicle.updated_at if self.mbta_vehicle and self.mbta_vehicle.updated_at else None
 
