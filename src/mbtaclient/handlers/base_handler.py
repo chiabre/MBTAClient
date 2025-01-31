@@ -33,6 +33,7 @@ class MBTABaseHandler:
             StopType.ARRIVAL: []
         }
         self._max_trips = max_trips
+        self._mbta_trip_stops_ids = set()
         
         #self._trips: dict[str, Trip] = {}  # Dictionary to store Trip objects, keyed by trip ID
         
@@ -479,5 +480,18 @@ class MBTABaseHandler:
             self._logger.error(f"Error sorting and cleaning trips: {e}")
             raise
 
+    async def _update_mbta_stops_for_trips(self, trips: list[Trip]) -> None:
+        
+        for trip in trips:
+            params = {
+                    'filter[route]': trip.route_id,
+                    'include' : 'child_stops'
+            }
+            mbta_stops, _ = await self._mbta_client.fetch_stops(params=params)
+            for mbta_stop in mbta_stops:
+                if mbta_stop.id not in self._mbta_stops_ids or not MBTAStopObjStore.get_by_id(mbta_stop.id):
+                    self._mbta_trip_stops_ids.add(mbta_stop.id)
+                    MBTAStopObjStore.store(mbta_stop)
+                    
 class MBTAStopError(Exception):
     pass

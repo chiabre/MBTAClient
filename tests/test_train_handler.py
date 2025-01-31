@@ -14,6 +14,8 @@ from src.mbtaclient.handlers.trains_handler import TrainsHandler
     "departure_stop_name, arrival_stop_name,train",
     [
         ("South Station", "Back Bay", "509"),
+        ("Worcester", "South Station", "518"),
+    
     ]
 )
 

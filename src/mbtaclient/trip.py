@@ -1,8 +1,9 @@
 from dataclasses import dataclass, field
+import re
 from typing import Union, Optional
 from datetime import datetime, timedelta
 
-from .mbta_object_store import MBTAAlertObjStore, MBTARouteObjStore, MBTATripObjStore, MBTAVehicleObjStore
+from .mbta_object_store import MBTAAlertObjStore, MBTARouteObjStore, MBTAStopObjStore, MBTATripObjStore, MBTAVehicleObjStore
 
 from .stop import Stop, StopType
 
@@ -12,6 +13,7 @@ from .models.mbta_route import MBTARoute
 from .models.mbta_trip import MBTATrip
 from .models.mbta_vehicle import MBTAVehicle
 from .models.mbta_alert import MBTAAlert
+from .models.mbta_stop import MBTAStop
 
 @dataclass
 class Trip:
@@ -148,9 +150,20 @@ class Trip:
         return self.mbta_vehicle.current_status if self.mbta_vehicle and self.mbta_vehicle.current_status else None
 
     @property
+    def vehicle_current_stop_name(self) -> Optional[str]:
+        return MBTAStopObjStore.get_by_child_stop_id(self.mbta_vehicle.stop_id).name if self.mbta_vehicle and self.mbta_vehicle.stop_id and MBTAStopObjStore.get_by_child_stop_id(self.mbta_vehicle.stop_id) else None
+    
+    @property
+    def vehicle_current_status_extended(self) -> Optional[str]:
+        if self.vehicle_current_status and self.vehicle_current_stop_name:
+            title_case_with_spaces = " ".join([word.capitalize() for word in self.vehicle_current_status.split("_")])
+            return title_case_with_spaces + " " + self.vehicle_current_stop_name
+        return None
+        
+    @property
     def vehicle_current_stop_sequence(self) -> Optional[str]:
         return self.mbta_vehicle.current_stop_sequence if self.mbta_vehicle and self.mbta_vehicle.current_stop_sequence else None
-
+    
     @property
     def vehicle_longitude(self) -> Optional[float]:
         return self.mbta_vehicle.longitude if self.mbta_vehicle and self.mbta_vehicle.longitude else None
@@ -278,8 +291,8 @@ class Trip:
                 self.get_stop_id_by_stop_type(StopType.DEPARTURE),
                 self.get_stop_id_by_stop_type(StopType.ARRIVAL)
             ] if stop_id is not None
-        ]
-
+        ]    
+    
     def get_alert_header(self, alert_index: int) -> Optional[str]:
         if 0 <= alert_index < len(self.mbta_alerts):
             return self.mbta_alerts[alert_index].header
@@ -329,6 +342,9 @@ class Trip:
                     return "20+ MIN"
 
         elif current_stop > stop.stop_sequence:
-            return "DEPARTED"
-
+            if stop_type == StopType.DEPARTURE:
+                return "DEPARTED"
+            elif stop_type == StopType.ARRIVAL:
+                return "ARRIVED"
+        
         return None

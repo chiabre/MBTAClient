@@ -90,6 +90,18 @@ class MBTAStopObjStore(MBTABaseObjStore[MBTAStop]):
     """Uncapped registry for MBTA Stop objects."""
     _registry: OrderedDict[str, MBTAStop] = OrderedDict()
 
+    @classmethod
+    def get_by_child_stop_id(cls, child_stop_id: str) -> Optional[MBTAStop]:
+        """Retrieve a stop that contains the given child_stop_id and mark it as recently used."""
+        with cls._lock:
+            for stop_id, stop in cls._registry.items():
+                if child_stop_id ==  stop_id or  child_stop_id in stop.child_stops:
+                    # Move the found stop to the end to mark it as recently used
+                    cls._registry.move_to_end(stop_id)
+                    return stop
+                
+        return None  # Return None if no stop contains the child_stop_id
+    
 
 class MBTATripObjStore(MBTASizedObjStore[MBTATrip]):
     """Capped registry for MBTA Trip objects."""
