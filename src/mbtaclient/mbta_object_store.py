@@ -95,7 +95,7 @@ class MBTAStopObjStore(MBTABaseObjStore[MBTAStop]):
         """Retrieve a stop that contains the given child_stop_id and mark it as recently used."""
         with cls._lock:
             for stop_id, stop in cls._registry.items():
-                if child_stop_id ==  stop_id or  child_stop_id in stop.child_stops:
+                if child_stop_id ==  stop_id or child_stop_id in stop.child_stops:
                     # Move the found stop to the end to mark it as recently used
                     cls._registry.move_to_end(stop_id)
                     return stop
