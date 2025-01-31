@@ -22,7 +22,7 @@ class Trip:
     mbta_trip_id: Optional[str] = None
     mbta_vehicle_id: Optional[str] = None
     mbta_alerts_ids: set[Optional[str]] = field(default_factory=set)
-    mbta_prediction_status: [Optional[str]] = None
+    mbta_prediction_status: Optional[str] = None
     stops: list[Optional['Stop']] = field(default_factory=list)
 
     # registry 
@@ -324,17 +324,14 @@ class Trip:
         if current_stop < stop.stop_sequence:
             if minutes <= 0:
                 return "Arriving"
-            if minutes <= 19:
-                return f"{minutes} min"
-            else:
-                return "20+ min"
+            return f"Arriving in {minutes} min"
 
         elif current_stop == stop.stop_sequence:
 
             if status == "STOPPED_AT":
                 if stop_type == StopType.DEPARTURE:
-                    if minutes >= 5:
-                        return f"Departing < {minutes + 1} min"
+                    if minutes >= 2:
+                        return f"Departing in {minutes + 1} min"
                     return "Boarding"
                 elif stop_type == StopType.ARRIVAL:
                     return "Arriving"
@@ -345,10 +342,8 @@ class Trip:
             if status == "IN_TRANSIT_TO":
                 if minutes <= 0:
                     return "Arriving"
-                if minutes <= 19:
-                    return f"Arriving < {minutes} min"
                 else:
-                    return "20+ min"
+                    return f"Arriving in {minutes} min"
 
         elif current_stop > stop.stop_sequence:
             if stop_type == StopType.DEPARTURE:
