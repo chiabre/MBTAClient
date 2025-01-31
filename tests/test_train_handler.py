@@ -59,12 +59,12 @@ async def test_handler(departure_stop_name, arrival_stop_name, train):
         
         for trip in trips:
             # Validate essential trip properties
-            assert trip.mbta_route is not None, f"Trip is missing route information for {departure_stop_name} or {arrival_stop_name}"
-            assert trip.mbta_trip is not None, f"Trip is missing trip information for {departure_stop_name} or {arrival_stop_name}"
+            assert trip._mbta_route is not None, f"Trip is missing route information for {departure_stop_name} or {arrival_stop_name}"
+            assert trip._mbta_trip is not None, f"Trip is missing trip information for {departure_stop_name} or {arrival_stop_name}"
             assert trip.departure_time is not None, f"Trip is missing departure time for {departure_stop_name} or {arrival_stop_name}"
             
             # Route type-specific validations
-            if trip.mbta_route.type in [1, 2]:  # Heavy Rail or Commuter Rail
+            if trip._mbta_route.type in [1, 2]:  # Heavy Rail or Commuter Rail
                 assert trip.departure_platform_name is not None, (
                     f"Rail trip at stop {departure_stop_name} must have a platform name."
                 )
