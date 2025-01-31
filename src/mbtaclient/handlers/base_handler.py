@@ -22,7 +22,8 @@ from ..models.mbta_alert import MBTAAlert, MBTAAlertPassengerActivity, MBTAAlert
 
 class MBTABaseHandler:
 
-    FILTER_TIME_BUFFER = timedelta(minutes=10)
+    FILTER_TIME_DEPARTURE_BUFFER = timedelta(minutes=15)
+    FILTER_TIME_ARRIVAL_BUFFER = timedelta(minutes=5)
     MAX_TRIPS = 50
 
     def __init__( self, mbta_client: MBTAClient, max_trips: Optional[int],logger: Optional[logging.Logger]):
@@ -33,6 +34,7 @@ class MBTABaseHandler:
             StopType.ARRIVAL: []
         }
         self._max_trips = max_trips
+        self._mbta_trip_stops_ids = set()
         
         #self._trips: dict[str, Trip] = {}  # Dictionary to store Trip objects, keyed by trip ID
         
@@ -233,6 +235,10 @@ class MBTABaseHandler:
                         scheduling=scheduling, 
                         mbta_stop_id=scheduling.stop_id)
                 
+                ##Status from prediction
+                if isinstance(scheduling, MBTAPrediction) and scheduling.status:
+                    trip.mbta_prediction_status = scheduling.status
+                    
                 trips[scheduling.trip_id] = trip
                     
             return trips
@@ -424,11 +430,11 @@ class MBTABaseHandler:
                         continue
 
                 # If removed_departed = true Filter out trips already departed (+10mins)
-                if remove_departed and departure_stop.time < now - self.FILTER_TIME_BUFFER:
+                if remove_departed and departure_stop.time < now - self.FILTER_TIME_DEPARTURE_BUFFER:
                     continue
                 
                 # Filter out trips already arrived (+10mins)
-                if arrival_stop and arrival_stop.time < now - self.FILTER_TIME_BUFFER:
+                if arrival_stop and arrival_stop.time < now - self.FILTER_TIME_ARRIVAL_BUFFER:
                     continue
                 
                 vehicle_current_stop_sequence = trip.vehicle_current_stop_sequence
@@ -479,5 +485,18 @@ class MBTABaseHandler:
             self._logger.error(f"Error sorting and cleaning trips: {e}")
             raise
 
+    async def _update_mbta_stops_for_trips(self, trips: list[Trip]) -> None:
+        
+        for trip in trips:
+            params = {
+                    'filter[route]': trip.route_id,
+                    'include' : 'child_stops'
+            }
+            mbta_stops, _ = await self._mbta_client.fetch_stops(params=params)
+            for mbta_stop in mbta_stops:
+                if mbta_stop.id not in self._mbta_stops_ids or not MBTAStopObjStore.get_by_id(mbta_stop.id):
+                    self._mbta_trip_stops_ids.add(mbta_stop.id)
+                    MBTAStopObjStore.store(mbta_stop)
+                    
 class MBTAStopError(Exception):
     pass

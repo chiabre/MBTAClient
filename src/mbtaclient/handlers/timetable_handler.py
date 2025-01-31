@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 from typing import Optional
 import logging
@@ -53,8 +54,13 @@ class TimetableHandler(MBTABaseHandler):
                 remove_departed=True, 
                 require_both_stops=False)
 
+            # Update stops for the trip
+            task_stops = asyncio.create_task(super()._update_mbta_stops_for_trips(trips=filtered_trips.values()))
             # Update trip details
-            detailed_trips = await super()._update_details(trips=filtered_trips)
+            tasks_trips_details = asyncio.create_task(super()._update_details(trips=filtered_trips))
+    
+            await task_stops                             
+            detailed_trips = await tasks_trips_details
 
             # Filter out departed trips again
             filtered_trips = super()._filter_and_sort_trips(

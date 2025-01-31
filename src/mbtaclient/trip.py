@@ -1,8 +1,9 @@
 from dataclasses import dataclass, field
+import re
 from typing import Union, Optional
 from datetime import datetime, timedelta
 
-from .mbta_object_store import MBTAAlertObjStore, MBTARouteObjStore, MBTATripObjStore, MBTAVehicleObjStore
+from .mbta_object_store import MBTAAlertObjStore, MBTARouteObjStore, MBTAStopObjStore, MBTATripObjStore, MBTAVehicleObjStore
 
 from .stop import Stop, StopType
 
@@ -12,6 +13,7 @@ from .models.mbta_route import MBTARoute
 from .models.mbta_trip import MBTATrip
 from .models.mbta_vehicle import MBTAVehicle
 from .models.mbta_alert import MBTAAlert
+from .models.mbta_stop import MBTAStop
 
 @dataclass
 class Trip:
@@ -20,6 +22,7 @@ class Trip:
     mbta_trip_id: Optional[str] = None
     mbta_vehicle_id: Optional[str] = None
     mbta_alerts_ids: set[Optional[str]] = field(default_factory=set)
+    mbta_prediction_status: [Optional[str]] = None
     stops: list[Optional['Stop']] = field(default_factory=list)
 
     # registry 
@@ -144,13 +147,20 @@ class Trip:
 
     # vehicle
     @property
-    def vehicle_current_status(self) -> Optional[str]:
-        return self.mbta_vehicle.current_status if self.mbta_vehicle and self.mbta_vehicle.current_status else None
-
+    def vehicle_current_stop_name(self) -> Optional[str]:
+        return MBTAStopObjStore.get_by_child_stop_id(self.mbta_vehicle.stop_id).name if self.mbta_vehicle and self.mbta_vehicle.stop_id and MBTAStopObjStore.get_by_child_stop_id(self.mbta_vehicle.stop_id) else None
+    
+    @property
+    def vehicle_status(self) -> Optional[str]:
+        if self.mbta_vehicle and self.mbta_vehicle.current_status and self.vehicle_current_stop_name:
+            title_case_with_spaces = " ".join([word.capitalize() for word in self.mbta_vehicle.current_status.split("_")])
+            return title_case_with_spaces + " " + self.vehicle_current_stop_name
+        return None
+        
     @property
     def vehicle_current_stop_sequence(self) -> Optional[str]:
         return self.mbta_vehicle.current_stop_sequence if self.mbta_vehicle and self.mbta_vehicle.current_stop_sequence else None
-
+    
     @property
     def vehicle_longitude(self) -> Optional[float]:
         return self.mbta_vehicle.longitude if self.mbta_vehicle and self.mbta_vehicle.longitude else None
@@ -160,9 +170,13 @@ class Trip:
         return self.mbta_vehicle.latitude if self.mbta_vehicle and self.mbta_vehicle.latitude else None
 
     @property
-    def vehicle_occupancy_status(self) -> Optional[str]:
+    def vehicle_occupancy(self) -> Optional[str]:
         return self.mbta_vehicle.occupancy_status if self.mbta_vehicle and self.mbta_vehicle.occupancy_status else None
 
+    @property
+    def vehicle_speed(self) -> Optional[str]:
+        return self.mbta_vehicle.speed if self.mbta_vehicle and self.mbta_vehicle.speed else None
+    
     @property
     def vehicle_updated_at(self) -> Optional[datetime]:
         return self.mbta_vehicle.updated_at if self.mbta_vehicle and self.mbta_vehicle.updated_at else None
@@ -194,8 +208,12 @@ class Trip:
 
     @property
     def departure_status(self) -> Optional[str]:
-        return self._get_stop_countdown(StopType.DEPARTURE) if self.departure_stop else None
+        return self._get_stop_status(StopType.DEPARTURE) if self.departure_stop else None
 
+    @property
+    def departure_countdown(self) -> Optional[str]:
+        return self._get_stop_countdown(StopType.DEPARTURE) if self.departure_stop else None
+    
     #arrival stop
     @property
     def arrival_stop(self) -> Optional[Stop]:
@@ -223,6 +241,10 @@ class Trip:
 
     @property
     def arrival_status(self) -> Optional[str]:
+        return self._get_stop_status(StopType.ARRIVAL) if self.arrival_stop else None
+    
+    @property
+    def arrival_countdown(self) -> Optional[str]:
         return self._get_stop_countdown(StopType.ARRIVAL) if self.arrival_stop else None
 
     def get_stop_by_type(self, stop_type: str) -> Optional[Stop]:
@@ -274,15 +296,19 @@ class Trip:
                 self.get_stop_id_by_stop_type(StopType.DEPARTURE),
                 self.get_stop_id_by_stop_type(StopType.ARRIVAL)
             ] if stop_id is not None
-        ]
-
+        ]    
+    
     def get_alert_header(self, alert_index: int) -> Optional[str]:
         if 0 <= alert_index < len(self.mbta_alerts):
             return self.mbta_alerts[alert_index].header
         return None
 
-    def _get_stop_countdown(self, stop_type: StopType) -> Optional[str]:
+    def _get_stop_status(self, stop_type: StopType) -> Optional[str]:
         """Determine the countdown or status of a stop based on vehicle and time."""
+        
+        if self.mbta_prediction_status:
+                return self.mbta_prediction_status
+            
         stop = self.get_stop_by_type(stop_type)
 
         if not stop or not stop.time or not self.mbta_vehicle:
@@ -297,34 +323,73 @@ class Trip:
 
         if current_stop < stop.stop_sequence:
             if minutes <= 0:
-                return "ARRIVING"
+                return "Arriving"
             if minutes <= 19:
-                return f"{minutes + 1} MIN"
+                return f"{minutes} min"
             else:
-                 return "20+ MIN"
+                return "20+ min"
 
         elif current_stop == stop.stop_sequence:
 
             if status == "STOPPED_AT":
                 if stop_type == StopType.DEPARTURE:
                     if minutes >= 5:
-                        return f"DEPARTING < {minutes + 1} MIN"
-                    return "BOARDING"
+                        return f"Departing < {minutes + 1} min"
+                    return "Boarding"
                 elif stop_type == StopType.ARRIVAL:
-                    return "ARRIVED"
+                    return "Arriving"
 
             if status == "INCOMING_AT":
-                return "INCOMING"
+                return "Incoming"
 
             if status == "IN_TRANSIT_TO":
                 if minutes <= 0:
-                    return "ARRIVING"
+                    return "Arriving"
                 if minutes <= 19:
-                    return f"ARRIVING < {minutes + 1} MIN"
+                    return f"Arriving < {minutes} min"
                 else:
-                    return "20+ MIN"
+                    return "20+ min"
 
         elif current_stop > stop.stop_sequence:
-            return "DEPARTED"
-
+            if stop_type == StopType.DEPARTURE:
+                return "Departed"
+            elif stop_type == StopType.ARRIVAL:
+                return "Arrived"
+        
         return None
+
+    def _get_stop_countdown(self, stop_type: StopType) -> Optional[str]:
+            """Determine the countdown to a stop based on vehicle and time following
+            https://www.mbta.com/developers/v3-api/best-practices """
+
+            if self.mbta_prediction_status:
+                return self.mbta_prediction_status
+            
+            stop = self.get_stop_by_type(stop_type)
+                        
+            if not stop or not stop.time or not self.mbta_vehicle:
+                return None
+            
+            current_stop = self.mbta_vehicle.current_stop_sequence
+            status = self.mbta_vehicle.current_status
+                        
+            seconds = (stop.time - datetime.now().astimezone()).total_seconds()
+
+            if seconds < 0:
+                return None
+            
+            if seconds <= 90 and status == "STOPPED_AT" and current_stop == stop.stop_sequence:
+                return "BRD"
+
+            if seconds <= 30:
+                return "ARR"
+            
+            if seconds <= 60:
+                return "1 min"
+            
+            minutes = int(seconds/60)
+            
+            if minutes > 20:
+                return "20+ min"
+            
+            return f"{minutes} min"

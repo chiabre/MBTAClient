@@ -25,6 +25,11 @@ class MBTAStop:
             self.vehicle_type: Optional[int] = attributes.get('vehicle_type', None)
             self.wheelchair_boarding: Optional[int] = attributes.get('wheelchair_boarding', None)
 
+            # Extract child stops
+            relationships = stop.get("relationships", {})
+            child_stops_data = relationships.get("child_stops", {}).get("data", []) if relationships.get('child_stops', {}).get('data') else None
+            self.child_stops: list[str] = [child["id"] for child in child_stops_data] if child_stops_data else []
+
         except Exception as e:
             # Log the exception with traceback
             logger = logging.getLogger(__name__)

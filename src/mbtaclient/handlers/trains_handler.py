@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta
 from typing import Optional, Tuple
 import logging
@@ -17,48 +18,47 @@ class TrainsHandler(MBTABaseHandler):
     async def create(
         cls,
         departure_stop_name: str ,
-        mbta_client: MBTAClient, 
+        mbta_client: MBTAClient,
         arrival_stop_name: str,
-        trips_names: str,
+        trips_name: str,
         logger: Optional[logging.Logger] = None)-> "TrainsHandler":
 
         """Asynchronous factory method to initialize TripsHandler."""
         instance = await super()._create(
-            departure_stop_name=departure_stop_name, 
-            arrival_stop_name=arrival_stop_name, 
+            departure_stop_name=departure_stop_name,
+            arrival_stop_name=arrival_stop_name,
             mbta_client=mbta_client,
-            max_trips=len(trips_names),
+            max_trips=1,
             logger=logger)
-
-        instance._mbta_trips_ids = []
+        
         instance._logger = logger or logging.getLogger(__name__)  # Logger instance
 
-        await instance.__update_mbta_trips_by_trip_names(trips_names)
+        await instance.__update_mbta_trips_by_trip_name(trips_name)
 
         return instance
 
-    async def __update_mbta_trips_by_trip_names(self, trips_names: list[str]) -> None:
+    async def __update_mbta_trips_by_trip_name(self, trips_name: str) -> None:
         self._logger.debug("Updating MBTA trips")
         try:
-            mbta_trips, _ = await self.__fetch_trips_by_names(trips_names)
+            mbta_trips, _ = await self.__fetch_trips_by_name(trips_name)
             if mbta_trips:
                 for mbta_trip in mbta_trips:
                     if not MBTATripObjStore.get_by_id(mbta_trip.id):
                         MBTATripObjStore.store(mbta_trip)
-                    self._mbta_trips_ids.append(mbta_trip.id)
+                    self._mbta_trips_id = mbta_trip.id
             else:
-                self._logger.error(f"Invalid MBTA trip name {trips_names}")
-                raise MBTATripError(f"Invalid MBTA trip name {trips_names}")
+                self._logger.error(f"Invalid MBTA trip name {trips_name}")
+                raise MBTATripError(f"Invalid MBTA trip name {trips_name}")
   
         except Exception as e:
             self._logger.error(f"Error updating MBTA trips: {e}")
             raise
 
-    async def __fetch_trips_by_names(self, train_names: list[str]) -> Tuple[list[MBTATrip],float]:    
+    async def __fetch_trips_by_name(self, train_name: str) -> Tuple[list[MBTATrip],float]:    
 
         params = {
             'filter[revenue]': 'REVENUE',
-            'filter[name]': ','.join(train_names)
+            'filter[name]': train_name
             }
 
         mbta_trips, timestamp = await self._mbta_client.fetch_trips(params)
@@ -78,7 +78,7 @@ class TrainsHandler(MBTABaseHandler):
                 date_to_try = (now + timedelta(days=i)).strftime('%Y-%m-%d')
 
                 params = {
-                    'filter[trip]': ','.join(self._mbta_trips_ids),
+                    'filter[trip]': self._mbta_trips_id,
                     'filter[date]': date_to_try
                 }
 
@@ -88,17 +88,23 @@ class TrainsHandler(MBTABaseHandler):
                 filtered_trips = super()._filter_and_sort_trips(
                     trips=updated_trips, 
                     remove_departed=False)
-
+                
+                if len(filtered_trips) == self._max_trips:
+                    break
+                
                 if len(filtered_trips) == 0:
                     if i == 6:
-                        self._logger.error(f"Error retrieving scheduling for {trips.keys()}")
-                        raise MBTATripError("No trip between the provided stops in the next 7 days")
+                        self._logger.error(f"No trips between the provided stops till {date_to_try}")
+                        raise MBTATripError(f"No trips between the provided stops till {date_to_try}")
                     continue
 
-                break
-
+            # Update stops for the trip
+            task_stops = asyncio.create_task(super()._update_mbta_stops_for_trips(trips=filtered_trips.values()))
             # Update trip details
-            detailed_trips = await super()._update_details(trips=filtered_trips)
+            tasks_trips_details = asyncio.create_task(super()._update_details(trips=filtered_trips))
+    
+            await task_stops                             
+            detailed_trips = await tasks_trips_details
 
             return list(detailed_trips.values())
 
@@ -106,5 +112,8 @@ class TrainsHandler(MBTABaseHandler):
             self._logger.error(f"Error updating trips scheduling and info: {e}")
             raise
 
+
+
+                    
 class MBTATripError(Exception):
     pass

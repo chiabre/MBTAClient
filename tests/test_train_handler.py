@@ -14,6 +14,8 @@ from src.mbtaclient.handlers.trains_handler import TrainsHandler
     "departure_stop_name, arrival_stop_name,train",
     [
         ("South Station", "Back Bay", "509"),
+        ("Worcester", "South Station", "518"),
+        #("West Natick", "South Station", "520"),
     ]
 )
 
@@ -46,7 +48,7 @@ async def test_handler(departure_stop_name, arrival_stop_name, train):
             departure_stop_name=departure_stop_name,
             mbta_client=mbta_client,
             arrival_stop_name=arrival_stop_name,
-            trips_names = [train]
+            trips_name = train
         )
 
         # Fetch trips using the handler
