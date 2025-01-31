@@ -235,6 +235,10 @@ class MBTABaseHandler:
                         scheduling=scheduling, 
                         mbta_stop_id=scheduling.stop_id)
                 
+                ##Status from prediction
+                if isinstance(scheduling, MBTAPrediction) and scheduling.status:
+                    trip.mbta_prediction_status = scheduling.status
+                    
                 trips[scheduling.trip_id] = trip
                     
             return trips
