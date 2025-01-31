@@ -22,7 +22,8 @@ from ..models.mbta_alert import MBTAAlert, MBTAAlertPassengerActivity, MBTAAlert
 
 class MBTABaseHandler:
 
-    FILTER_TIME_BUFFER = timedelta(minutes=10)
+    FILTER_TIME_DEPARTURE_BUFFER = timedelta(minutes=15)
+    FILTER_TIME_ARRIVAL_BUFFER = timedelta(minutes=5)
     MAX_TRIPS = 50
 
     def __init__( self, mbta_client: MBTAClient, max_trips: Optional[int],logger: Optional[logging.Logger]):
@@ -425,11 +426,11 @@ class MBTABaseHandler:
                         continue
 
                 # If removed_departed = true Filter out trips already departed (+10mins)
-                if remove_departed and departure_stop.time < now - self.FILTER_TIME_BUFFER:
+                if remove_departed and departure_stop.time < now - self.FILTER_TIME_DEPARTURE_BUFFER:
                     continue
                 
                 # Filter out trips already arrived (+10mins)
-                if arrival_stop and arrival_stop.time < now - self.FILTER_TIME_BUFFER:
+                if arrival_stop and arrival_stop.time < now - self.FILTER_TIME_ARRIVAL_BUFFER:
                     continue
                 
                 vehicle_current_stop_sequence = trip.vehicle_current_stop_sequence
