@@ -28,7 +28,7 @@ class MBTASessionManager:
         cls._logger = logger or logging.getLogger(__name__)
         cls._max_concurrent_requests = max_concurrent_requests or cls._max_concurrent_requests
         cls._timeout = timeout or cls._timeout
-        cls._semaphore = asyncio.Semaphore(cls._max_concurrent_requests)
+        cls.semaphore = asyncio.Semaphore(cls._max_concurrent_requests)
         if session:
             cls._session = session
             cls._own_session = False
@@ -61,7 +61,7 @@ class MBTASessionManager:
         """Clean up resources when shutting down."""
         cls._logger.debug("Cleaning up MBTASessionManager resources")
         await cls.close_session()
-        cls._semaphore = None
+        cls.semaphore = None
 
     @classmethod
     async def __aenter__(cls):
