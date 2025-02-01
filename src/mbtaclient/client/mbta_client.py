@@ -24,18 +24,11 @@ ENDPOINTS = {
     'VEHICLES': 'vehicles', 
 }
 
-class MBTAAuthenticationError(Exception):
-    """Custom exception for MBTA authentication errors."""
 
-class MBTATooManyRequestsError(Exception):
-    """Custom exception for MBTA TooManyRequests errors."""
-
-class MBTAClientError(Exception):
-    """Custom exception class for MBTA API errors."""
 
 class MBTAClient:
     """Class to interact with the MBTA v3 API."""
-
+    
     def __init__(self, 
                  api_key: Optional[str] = None,
                  session: Optional[aiohttp.ClientSession] = None, 
@@ -88,11 +81,16 @@ class MBTAClient:
                 self._logger.warning(f"Response missing 'data': {data}")
                 raise MBTAClientError("Invalid response from API.")
             return data, timestamp
+        
         except MBTAClientError as error:
-            self._logger.error(f"MBTAClientError: {error}")
+            self._logger.error(
+                "MBTAClientError: %s (HTTP %s - %s) | URL: %s",
+                error.message, error.status_code, error.reason, error.url
+            )
             raise
+
         except Exception as error:
-            self._logger.error(f"Unexpected error: {error}")
+            self._logger.error("Unexpected error: %s", error)
             raise
 
     async def request(self, method: str, path: str, params: Optional[Dict[str, Any]] = None) -> Tuple[Any,float]:
@@ -112,7 +110,7 @@ class MBTAClient:
         headers["Accept-Encoding"] = "gzip"
 
         try:
-            async with MBTASessionManager._semaphore:
+            async with MBTASessionManager.semaphore:
                 
                 self._logger.debug(f"{method} {url} {headers} {params}")                
                 response: aiohttp.ClientResponse = await session.request(
@@ -221,3 +219,25 @@ class MBTAClient:
         data, timestamp = await self._fetch_data(ENDPOINTS['ALERTS'], params)
         return [MBTAAlert(item) for item in data["data"]], timestamp
 
+class MBTAAuthenticationError(Exception):
+    """Custom exception for MBTA authentication errors."""
+
+class MBTATooManyRequestsError(Exception):
+    """Custom exception for MBTA TooManyRequests errors."""
+
+class MBTAClientError(Exception):
+    """Custom exception for MBTA client errors."""
+    def __init__(self, message, status_code=None, reason=None, url=None):
+        self.message = message
+        self.status_code = status_code
+        self.reason = reason
+        self.url = url
+        super().__init__(self.__str__())
+
+    def __str__(self):
+        base_message = f"MBTAClientError: {self.message}"
+        if self.status_code:
+            base_message += f" (HTTP {self.status_code} - {self.reason})"
+        if self.url:
+            base_message += f" | URL: {self.url}"
+        return base_message
