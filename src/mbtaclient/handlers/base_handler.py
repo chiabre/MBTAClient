@@ -350,52 +350,68 @@ class MBTABaseHandler:
             - The alert's informed entity is tied to the departure or arrival stops with relevant activities (boarding or exiting).
             - The trip's departure or arrival time falls within the alert's active period.
         """
+        
+        try:
+            
+            def check_route_level_alert(informed_entity: MBTAAlertsInformedEntity):
+                """
+                Check if the informed entity is a route-level alert matching the trip's route and direction.
 
-        def check_route_level_alert(informed_entity: MBTAAlertsInformedEntity):
-            """
-            Check if the informed entity is a route-level alert matching the trip's route and direction.
+                Args:
+                    informed_entity (MBTAAlertsInformedEntity): The informed entity to check.
 
-            Args:
-                informed_entity (MBTAAlertsInformedEntity): The informed entity to check.
-
-            Returns:
-                bool: True if the entity matches the route-level alert criteria, otherwise False.
-            """
-            return (
-                informed_entity.route_id == trip._mbta_route.id and
-                not informed_entity.stop_id and
-                not informed_entity.trip_id and
-                (not informed_entity.direction_id or informed_entity.direction_id == trip._mbta_trip.direction_id)
-            )
-
-        trip_id = trip._mbta_trip.id if trip._mbta_trip else None
-        departure_stop_id = trip.get_stop_id_by_stop_type(StopType.DEPARTURE)
-        arrival_stop_id = trip.get_stop_id_by_stop_type(StopType.ARRIVAL)
-
-        for informed_entity in mbta_alert.informed_entities:
-            if (
-                check_route_level_alert(informed_entity) or
-                informed_entity.trip_id == trip_id or
-                (
-                    informed_entity.stop_id == departure_stop_id and 
-                    MBTAAlertPassengerActivity.BOARD in informed_entity.activities
-                ) or
-                (
-                    informed_entity.stop_id == arrival_stop_id and 
-                    MBTAAlertPassengerActivity.EXIT in informed_entity.activities
+                Returns:
+                    bool: True if the entity matches the route-level alert criteria, otherwise False.
+                """
+                return (
+                    informed_entity.route_id == trip._mbta_route.id and
+                    not informed_entity.stop_id and
+                    not informed_entity.trip_id and
+                    (not informed_entity.direction_id or informed_entity.direction_id == trip._mbta_trip.direction_id)
                 )
-            ) and (
-                    (
-                        trip.departure_time and 
-                        mbta_alert.active_period_start <= trip._departure_stop.time and 
-                        (mbta_alert.active_period_end is None or trip._departure_stop.time <= mbta_alert.active_period_end)
-                    ) or (
-                        trip.arrival_time and 
-                        mbta_alert.active_period_start <= trip._arrival_stop and 
-                        (mbta_alert.active_period_end is None or trip._arrival_stop.time <= mbta_alert.active_period_end)
-                    )
-            ):
-                return True
+            
+            trip_id = trip._mbta_trip.id if trip._mbta_trip else None
+            departure_stop_id = trip.get_stop_id_by_stop_type(StopType.DEPARTURE)
+            arrival_stop_id = trip.get_stop_id_by_stop_type(StopType.ARRIVAL)
+
+            for informed_entity in mbta_alert.informed_entities:
+                
+                active_period_start = mbta_alert.active_period_start.replace(tzinfo=None)
+                active_period_end = mbta_alert.active_period_end.replace(tzinfo=None)
+                
+                try:
+                    if (
+                        check_route_level_alert(informed_entity) or
+                        informed_entity.trip_id == trip_id or
+                        (
+                            informed_entity.stop_id == departure_stop_id and 
+                            MBTAAlertPassengerActivity.BOARD in informed_entity.activities
+                        ) or
+                        (
+                            informed_entity.stop_id == arrival_stop_id and 
+                            MBTAAlertPassengerActivity.EXIT in informed_entity.activities
+                        )
+                    ) and (
+                        (
+                            trip.departure_time and 
+                            (active_period_start is None or active_period_start <= trip.departure_time) and 
+                            (active_period_end is None or trip.departure_time <= active_period_end)
+                        ) or (
+                            trip.arrival_time and 
+                            (active_period_start is None or active_period_start <= trip.arrival_time) and 
+                            (active_period_end is None or trip.arrival_time <= active_period_end)
+                        )
+                    ):
+                        return True
+
+                except Exception as e:
+                    logging.error(f"Exception processing informed_entity {informed_entity}: {e}")
+                    logging.error(traceback.format_exc())  # Logs full stack trace
+                    continue  # Skip this entity and continue processing others
+
+        except Exception as e:
+            logging.error(f"Unexpected error in __is_alert_relevant: {e}")
+            logging.error(traceback.format_exc())  # Logs full stack trace
 
         return False
 
