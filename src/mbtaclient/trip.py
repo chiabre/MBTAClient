@@ -308,7 +308,7 @@ class Trip:
         if not stop or not stop.time:
             return None 
         
-        seconds = (stop.time - datetime.now().astimezone()).total_seconds() 
+        seconds = (stop.time.astimezone() - datetime.now().astimezone()).total_seconds() 
             
         if self._mbta_vehicle:
         
@@ -364,7 +364,7 @@ class Trip:
         current_stop = self._mbta_vehicle.current_stop_sequence
         status = self._mbta_vehicle.current_status
                     
-        seconds = (stop.time - datetime.now().astimezone()).total_seconds()
+        seconds = (stop.time.astimezone() - datetime.now().astimezone()).total_seconds()
 
         if seconds < 0:
             return None
