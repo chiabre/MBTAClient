@@ -17,7 +17,7 @@ from src.mbtaclient.handlers.trips_handler import TripsHandler
         ("Copley", "Park Street", "Light Rail"),
         ("360 Huntington Ave", "Back Bay", "Bus"),
         ("Long Wharf (South)", "Charlestown Navy Yard", "Ferry"),
-         ("Back Bay", "South Station", "Commuter Rail"),
+        ("Congress St @ World Trade Center Sta", "South Station", "Bus"),
     ]
 )
 async def test_handler(departure_stop_name, arrival_stop_name, route_type):
