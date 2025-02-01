@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+import re
 from typing import Union, Optional
 from datetime import datetime
 
@@ -12,6 +13,7 @@ from .models.mbta_route import MBTARoute
 from .models.mbta_trip import MBTATrip
 from .models.mbta_vehicle import MBTAVehicle
 from .models.mbta_alert import MBTAAlert
+from .models.mbta_stop import MBTAStop
 
 
 @dataclass
@@ -297,7 +299,7 @@ class Trip:
 
     def _get_stop_status(self, stop_type: StopType) -> Optional[str]:
         """Determine the countdown or status of a stop based on vehicle and time."""
-        
+       
         if self._mbta_prediction_status:
                 return self._mbta_prediction_status
             
