@@ -66,7 +66,7 @@ async def test_handler(departure_stop_name, arrival_stop_name, route_type):
             
             # Route type-specific validations
             if trip._mbta_route.type in [1, 2]:  # Heavy Rail or Commuter Rail
-                assert trip.departure_platform_name is not None, (
+                assert trip.departure_platform is not None, (
                     f"Rail trip at stop {departure_stop_name} must have a platform name."
                 )
             

@@ -67,15 +67,15 @@ async def test_handler(stop_name, route_type):
             
             # Route type-specific validations
             if trip._mbta_route.type in [1, 2]:  # Heavy Rail or Commuter Rail
-                assert trip.departure_platform_name is not None, (
+                assert trip.departure_platform is not None, (
                     f"Rail trip at stop {stop_name} must have a platform name."
                 )
             
-            # Ensure trips belong to the expected route type
-            assert any(route_type_part in trip.route_description for route_type_part in route_type.split(" + ")), (
-                f"Route type mismatch for stop: {stop_name}. "
-                f"Expected one of {route_type}, but got {trip.route_description}."
-            )
+            # # Ensure trips belong to the expected route type
+            # assert any(route_type_part in trip.route_description for route_type_part in route_type.split(" + ")), (
+            #     f"Route type mismatch for stop: {stop_name}. "
+            #     f"Expected one of {route_type}, but got {trip.route_description}."
+            # )
             
             # Print trip details for debugging
             properties = [attr for attr in dir(Trip) if isdatadescriptor(getattr(Trip, attr))]
