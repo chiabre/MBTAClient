@@ -337,9 +337,9 @@ class Trip:
         hours = hours % 24      # Keep hours within 0-23 range
 
         if days > 0:
-            return f"{days}d {hours}h {minutes}min"
+            return f"{days}d {hours}h {minutes}m"
         elif hours > 0:
-            return f"{hours}h {minutes}min"
+            return f"{hours}h {minutes}m"
         
         if seconds > 60:
             return f"{minutes}min"
