@@ -487,7 +487,7 @@ class MBTABaseHandler:
         
         for trip in trips:
             params = {
-                    'filter[route]': trip.route_id,
+                    'filter[route]': trip._mbta_route.id,
                     'include' : 'child_stops'
             }
             mbta_stops, _ = await self._mbta_client.fetch_stops(params=params)
