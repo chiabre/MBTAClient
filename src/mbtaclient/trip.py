@@ -316,7 +316,7 @@ class Trip:
             vehicle_status = self._mbta_vehicle.current_status
 
             if vehicle_stop > stop.stop_sequence:
-                return "Departed" seconds <= 90 else "Arrived" # Only other possibility is StopType.ARRIVAL
+                return "Departed" if seconds <= 90 else "Arrived" # Only other possibility is StopType.ARRIVAL
                 
             if vehicle_stop == stop.stop_sequence:
                 if vehicle_status == "STOPPED_AT" and seconds <= 90:
