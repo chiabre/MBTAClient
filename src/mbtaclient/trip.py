@@ -162,7 +162,7 @@ class Trip:
         return self._mbta_vehicle.updated_at.replace(tzinfo=None) if self._mbta_vehicle and self._mbta_vehicle.updated_at else None
 
     @property
-    def vehicle_live_data(self) -> Optional[bool]:
+    def vehicle_fresh_data(self) -> Optional[bool]:
         if self._mbta_vehicle and self._mbta_vehicle.updated_at:
             now =  datetime.now().astimezone()
             delta = (now - self._mbta_vehicle.updated_at).total_seconds()
