@@ -313,6 +313,7 @@ class Trip:
             return self._mbta_prediction_status
 
         stop = self.get_stop_by_type(stop_type)
+        
         if not stop or not stop.time:
             return None
 
@@ -321,6 +322,7 @@ class Trip:
 
         # ✅ Vehicle data overrides general countdown logic when fresh
         if self._mbta_vehicle and self.is_vehicle_data_fresh:
+
             vehicle_stop = self._mbta_vehicle.current_stop_sequence
             vehicle_status = self._mbta_vehicle.current_status
 
@@ -360,7 +362,6 @@ class Trip:
             return "1 min"
 
         return None  # Just in case no condition matched
-
 
     def _get_stop_MBTA_countdown(self, stop_type: StopType) -> Optional[str]:
         """Determine the countdown to a stop based on vehicle and time following
