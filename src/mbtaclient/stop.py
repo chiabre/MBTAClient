@@ -11,7 +11,7 @@ class StopType(Enum):
     ARRIVAL = "arrival"
 
 @dataclass
-class TripStopTime:
+class StopTime:
     """
     Represents a time with optional original and updated values.
     """
@@ -36,8 +36,8 @@ class Stop:
     stop_type: StopType
     mbta_stop_id: str
     stop_sequence: int 
-    arrival_time: Optional[TripStopTime] = None 
-    departure_time: Optional[TripStopTime] = None
+    arrival_time: Optional[StopTime] = None 
+    departure_time: Optional[StopTime] = None
 
     def __init__(self, stop_type: StopType, mbta_stop_id: str, stop_sequence: int, arrival_time: Optional[datetime] = None, departure_time: Optional[datetime] = None, ):
         """
@@ -53,8 +53,8 @@ class Stop:
         self.stop_type = stop_type
         self.mbta_stop_id = mbta_stop_id
         self.stop_sequence = stop_sequence
-        self.arrival_time = TripStopTime(arrival_time) if arrival_time else None 
-        self.departure_time = TripStopTime(departure_time) if departure_time else None
+        self.arrival_time = StopTime(arrival_time) if arrival_time else None 
+        self.departure_time = StopTime(departure_time) if departure_time else None
 
     def __repr__(self) -> str:
         return (f"TripStop({self.stop_type.value}): {self.mbta_stop_id} @ {self.time.replace(tzinfo=None)}"
@@ -75,12 +75,12 @@ class Stop:
         
         if arrival_time:
             if not self.arrival_time:
-                self.arrival_time = TripStopTime(arrival_time)
+                self.arrival_time = StopTime(arrival_time)
             else:
                 self.arrival_time.updated_time = arrival_time
         if departure_time:
             if not self.departure_time:
-                self.departure_time = TripStopTime(departure_time)
+                self.departure_time = StopTime(departure_time)
             else:
                 self.departure_time.updated_time = departure_time
             
