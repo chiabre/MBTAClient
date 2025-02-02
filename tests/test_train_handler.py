@@ -20,7 +20,6 @@ from src.mbtaclient.handlers.trains_handler import TrainsHandler
 )
 
 
-
 async def test_handler(departure_stop_name, arrival_stop_name, train):
     """
     Integration test for TrinHandler.
@@ -45,10 +44,11 @@ async def test_handler(departure_stop_name, arrival_stop_name, train):
 
         # Configure the handler for the given stop
         handler: TrainsHandler = await TrainsHandler.create(
-            departure_stop_name=departure_stop_name,
             mbta_client=mbta_client,
+            departure_stop_name=departure_stop_name,
             arrival_stop_name=arrival_stop_name,
-            trips_name = train
+            trips_name = train,
+            max_trips=2
         )
 
         # Fetch trips using the handler

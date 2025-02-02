@@ -1,34 +1,35 @@
 import asyncio
+import logging
 from datetime import datetime, timedelta
 from typing import Optional, Tuple
-import logging
 
-from ..mbta_object_store import MBTATripObjStore
-
-from ..client.mbta_client import MBTAClient
 from ..handlers.base_handler import MBTABaseHandler
+from ..client.mbta_client import MBTAClient
+from ..mbta_object_store import MBTATripObjStore
 from ..models.mbta_trip import MBTATrip
 from ..trip import Trip
-
 
 class TrainsHandler(MBTABaseHandler):
     """Handler for managing Trips."""
 
+    DEFAULT_MAX_TRIPS = 1
+    
     @classmethod
     async def create(
         cls,
-        departure_stop_name: str ,
         mbta_client: MBTAClient,
+        departure_stop_name: str ,
         arrival_stop_name: str,
         trips_name: str,
+        max_trips: Optional[int] = DEFAULT_MAX_TRIPS,
         logger: Optional[logging.Logger] = None)-> "TrainsHandler":
 
         """Asynchronous factory method to initialize TripsHandler."""
         instance = await super()._create(
+            mbta_client=mbta_client,
             departure_stop_name=departure_stop_name,
             arrival_stop_name=arrival_stop_name,
-            mbta_client=mbta_client,
-            max_trips=1,
+            max_trips=max_trips,
             logger=logger)
         
         instance._logger = logger or logging.getLogger(__name__)  # Logger instance
@@ -72,9 +73,10 @@ class TrainsHandler(MBTABaseHandler):
             now = datetime.now().astimezone()
 
             # Initialize trips
-            trips: dict[str, Trip] = {}
+            weekly_trips: list[dict[str, Trip]] = []
 
             for i in range(7):
+                daily_trip: dict[str, Trip] = {}
                 date_to_try = (now + timedelta(days=i)).strftime('%Y-%m-%d')
 
                 params = {
@@ -82,38 +84,43 @@ class TrainsHandler(MBTABaseHandler):
                     'filter[date]': date_to_try
                 }
 
-                updated_trips = await super()._update_scheduling(trips=trips,params=params)
+                daily_updated_trip = await super()._update_scheduling(trips=daily_trip,params=params)
 
                 # Filter out departed trips
-                filtered_trips = super()._filter_and_sort_trips(
-                    trips=updated_trips, 
+                daily_filtered_trip = super()._filter_and_sort_trips(
+                    trips=daily_updated_trip,
                     remove_departed=False)
                 
-                if len(filtered_trips) == self._max_trips:
+                if len(daily_filtered_trip) > 0:
+                    weekly_trips.append(daily_filtered_trip)
+                
+                if len(weekly_trips) == self._max_trips:
                     break
                 
-                if len(filtered_trips) == 0:
+                if len(weekly_trips) == 0:
                     if i == 6:
                         self._logger.error(f"No trips between the provided stops till {date_to_try}")
                         raise MBTATripError(f"No trips between the provided stops till {date_to_try}")
                     continue
 
-            # Update stops for the trip
-            task_stops = asyncio.create_task(super()._update_mbta_stops_for_trips(trips=filtered_trips.values()))
-            # Update trip details
-            tasks_trips_details = asyncio.create_task(super()._update_details(trips=filtered_trips))
-    
-            await task_stops                             
-            detailed_trips = await tasks_trips_details
+            trains: list[Trip] = []
+            for trips in weekly_trips:
+                
+                # Update stops for the trip
+                task_stops = asyncio.create_task(super()._update_mbta_stops_for_trips(trips=trips.values()))
+                # Update trip details
+                tasks_trips_details = asyncio.create_task(super()._update_details(trips=trips))
 
-            return list(detailed_trips.values())
+                await task_stops                       
+                detailed_trip = await tasks_trips_details
+
+                trains.append(list(detailed_trip.values())[0])
+
+            return trains
 
         except Exception as e:
             self._logger.error(f"Error updating trips scheduling and info: {e}")
             raise
-
-
-
-                    
+   
 class MBTATripError(Exception):
     pass
