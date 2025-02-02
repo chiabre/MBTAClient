@@ -6,7 +6,7 @@ import os
 from src.mbtaclient.trip import Trip
 from src.mbtaclient.client.mbta_client import MBTAClient
 from src.mbtaclient.client.mbta_cache_manager import MBTACacheManager
-from src.mbtaclient.handlers.timetable_handler import TimetableHandler
+from src.mbtaclient.handlers.departures_handler import DeparturesHandler
 
 
 @pytest.mark.asyncio
@@ -45,9 +45,9 @@ async def test_handler(stop_name, route_type):
         print(f"Testing TimetableHandler for stop: {stop_name} ({route_type})")
         
         # Configure the handler for the given stop
-        max_trips = 5  # Limit the number of trips to process
-        handler: TimetableHandler = await TimetableHandler.create(
-            stop_name=stop_name,
+        max_trips = 2  # Limit the number of trips to process
+        handler: DeparturesHandler = await DeparturesHandler.create(
+            departure_stop_name=stop_name,
             mbta_client=mbta_client,
             max_trips=max_trips
         )
