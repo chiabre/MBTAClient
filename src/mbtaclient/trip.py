@@ -25,6 +25,8 @@ class Trip:
     _mbta_prediction_status: Optional[str] = None
     stops: list[Optional['Stop']] = field(default_factory=list)
 
+    DATA_FRESHNESS_THRESHOLD = 90  # seconds
+
     # registry 
     @property
     def _mbta_route(self) -> Optional[MBTARoute]:
@@ -162,12 +164,11 @@ class Trip:
         return self._mbta_vehicle.updated_at.replace(tzinfo=None) if self._mbta_vehicle and self._mbta_vehicle.updated_at else None
 
     @property
-    def vehicle_fresh_data(self) -> Optional[bool]:
+    def is_vehicle_data_fresh(self) -> bool:
         if self._mbta_vehicle and self._mbta_vehicle.updated_at:
-            now =  datetime.now().astimezone()
+            now =  datetime.now().astimezone() # Ensure consistent timezone handling
             delta = (now - self._mbta_vehicle.updated_at).total_seconds()
-            if delta <= 90:
-                return True
+            return delta <= self.DATA_FRESHNESS_THRESHOLD
         return False
 
     #departure stop
@@ -319,7 +320,7 @@ class Trip:
         seconds = (stop.time.astimezone() - now).total_seconds()
             
         # if vehicle data not older than 2min
-        if self._mbta_vehicle and self.vehicle_live_data:
+        if self._mbta_vehicle and self.is_vehicle_data_fresh:
         
             vehicle_stop = self._mbta_vehicle.current_stop_sequence
             vehicle_status = self._mbta_vehicle.current_status
