@@ -15,7 +15,7 @@ from src.mbtaclient.handlers.trips_handler import TripsHandler
         ("West Natick", "South Station", "Commuter Rail"),
         ("South Station", "Andrew", "Heavy Rail"),
         ("Copley", "Park Street", "Light Rail"),
-        ("360 Huntington Ave", "Back Bay", "Bus"),
+        ("Ruggles", "Warren St @ Dabney Pl", "Bus"),
         ("Long Wharf (South)", "Charlestown Navy Yard", "Ferry"),
         ("Congress St @ World Trade Center Sta", "South Station", "Bus"),
     ]

@@ -1,32 +1,31 @@
 import asyncio
+import logging
 from datetime import datetime
 from typing import Optional
-import logging
 
+from .base_handler import MBTABaseHandler
 from ..client.mbta_client import MBTAClient
-from ..handlers.base_handler import MBTABaseHandler
 from ..trip import Trip
 
 
-class TimetableHandler(MBTABaseHandler):
+class DeparturesHandler(MBTABaseHandler):
     """Handler for managing timetable."""
+
+    DEFAULT_MAX_TRIPS =  5
 
     @classmethod
     async def create(
         cls,
-        stop_name: str ,
-        mbta_client: MBTAClient, 
-        max_trips: Optional[int] = 5,
-        logger: Optional[logging.Logger] = None)-> "TimetableHandler":
+        mbta_client: MBTAClient,
+        departure_stop_name: str ,
+        max_trips: Optional[int] = DEFAULT_MAX_TRIPS,
+        logger: Optional[logging.Logger] = None)-> "DeparturesHandler":
 
-        """Asynchronous factory method to initialize TimetableHandler."""
-        departure_stop_name = stop_name
-        arrival_stop_name = None
+        """Asynchronous factory method to initialize DeparturesHandler."""
 
         instance = await super()._create(
             mbta_client=mbta_client, 
             departure_stop_name=departure_stop_name, 
-            arrival_stop_name=arrival_stop_name,
             max_trips=max_trips,
             logger=logger)
 
@@ -44,7 +43,7 @@ class TimetableHandler(MBTABaseHandler):
             params = {
                 'filter[min_time]': datetime.now().strftime("%H:%M")
             }
-            
+
             # Update trip scheduling
             updated_trips = await super()._update_scheduling(trips=trips, params=params)
 
@@ -55,17 +54,19 @@ class TimetableHandler(MBTABaseHandler):
                 require_both_stops=False)
 
             # Update stops for the trip
-            task_stops = asyncio.create_task(super()._update_mbta_stops_for_trips(trips=filtered_trips.values()))
+            task_stops = asyncio.create_task(
+                super()._update_mbta_stops_for_trips(trips=filtered_trips.values()))
             # Update trip details
-            tasks_trips_details = asyncio.create_task(super()._update_details(trips=filtered_trips))
-    
-            await task_stops                             
+            tasks_trips_details = asyncio.create_task(
+                super()._update_details(trips=filtered_trips))
+
+            await task_stops                 
             detailed_trips = await tasks_trips_details
 
             # Filter out departed trips again
             filtered_trips = super()._filter_and_sort_trips(
-                trips=detailed_trips, 
-                remove_departed=True, 
+                trips=detailed_trips,
+                remove_departed=True,
                 require_both_stops=False)
 
             # Limit trips to the maximum allowed
