@@ -10,7 +10,7 @@ from .trip import Trip
 from .stop import Stop, StopType
 from .handlers.trips_handler import TripsHandler
 from .handlers.trains_handler import TrainsHandler
-from .handlers.timetable_handler import TimetableHandler
+from .handlers.departures_handler import DeparturesHandler
 
 __all__ = [
     "MBTAAlert",
@@ -26,5 +26,5 @@ __all__ = [
     "StopType",
     "TripsHandler",
     "TrainsHandler",
-    "TimetableHandler",
+    "DeparturesHandler"
 ]

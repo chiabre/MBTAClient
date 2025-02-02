@@ -13,7 +13,6 @@ from .models.mbta_route import MBTARoute
 from .models.mbta_trip import MBTATrip
 from .models.mbta_vehicle import MBTAVehicle
 from .models.mbta_alert import MBTAAlert
-from .models.mbta_stop import MBTAStop
 
 
 @dataclass
@@ -162,6 +161,15 @@ class Trip:
     def vehicle_updated_at(self) -> Optional[datetime]:
         return self._mbta_vehicle.updated_at.replace(tzinfo=None) if self._mbta_vehicle and self._mbta_vehicle.updated_at else None
 
+    @property
+    def vehicle_live_data(self) -> Optional[bool]:
+        if self._mbta_vehicle and self._mbta_vehicle.updated_at:
+            now =  datetime.now().astimezone()
+            delta = (now - self._mbta_vehicle.updated_at).total_seconds()
+            if delta <= 90:
+                return True
+        return False
+
     #departure stop
     @property
     def _departure_stop(self) -> Optional[Stop]:
@@ -188,8 +196,8 @@ class Trip:
         return int(self._departure_stop.time_to.total_seconds()) if self._departure_stop and self._departure_stop.time_to else None
 
     @property
-    def departure_status(self) -> Optional[str]:
-        return self._get_stop_status(StopType.DEPARTURE) if self._departure_stop else None
+    def departure_MBTA_countdown(self) -> Optional[str]:
+        return self._get_stop_MBTA_countdown(StopType.DEPARTURE) if self._departure_stop else None
 
     @property
     def departure_countdown(self) -> Optional[str]:
@@ -221,8 +229,8 @@ class Trip:
         return int(self._arrival_stop.time_to.total_seconds()) if self._arrival_stop and self._arrival_stop.time_to else None
 
     @property
-    def arrival_status(self) -> Optional[str]:
-        return self._get_stop_status(StopType.ARRIVAL) if self._arrival_stop else None
+    def arrival_MBTA_countdown(self) -> Optional[str]:
+        return self._get_stop_MBTA_countdown(StopType.ARRIVAL) if self._arrival_stop else None
     
     @property
     def arrival_countdown(self) -> Optional[str]:
@@ -297,7 +305,7 @@ class Trip:
             return self._mbta_alerts[alert_index].header
         return None
 
-    def _get_stop_status(self, stop_type: StopType) -> Optional[str]:
+    def _get_stop_countdown(self, stop_type: StopType) -> Optional[str]:
         """Determine the countdown or status of a stop based on vehicle and time."""
        
         if self._mbta_prediction_status:
@@ -307,10 +315,11 @@ class Trip:
 
         if not stop or not stop.time:
             return None 
-        
-        seconds = (stop.time.astimezone() - datetime.now().astimezone()).total_seconds() 
+        now =  datetime.now().astimezone()
+        seconds = (stop.time.astimezone() - now).total_seconds()
             
-        if self._mbta_vehicle:
+        # if vehicle data not older than 2min
+        if self._mbta_vehicle and self.vehicle_live_data:
         
             vehicle_stop = self._mbta_vehicle.current_stop_sequence
             vehicle_status = self._mbta_vehicle.current_status
@@ -347,9 +356,11 @@ class Trip:
             return "1 min"
         if seconds > -30:
             return "Arriving"
+        if seconds < -30:
+            return "Departed"
         return None
 
-    def _get_stop_countdown(self, stop_type: StopType) -> Optional[str]:
+    def _get_stop_MBTA_countdown(self, stop_type: StopType) -> Optional[str]:
         """Determine the countdown to a stop based on vehicle and time following
         https://www.mbta.com/developers/v3-api/best-practices """
 

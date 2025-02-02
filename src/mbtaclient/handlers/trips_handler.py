@@ -13,14 +13,16 @@ from ..trip import Trip
 class TripsHandler(MBTABaseHandler):
     """Handler for managing Trips."""
 
+    DEFAULT_MAX_TRIPS =  5
+    
     @classmethod
     async def create(
         cls, 
         departure_stop_name: str ,
         mbta_client: MBTAClient,
         arrival_stop_name: str,
-        max_trips: Optional[int] = 5,
-        sort_by: Optional[StopType] = StopType.DEPARTURE,
+        max_trips: Optional[int] = DEFAULT_MAX_TRIPS,
+        sort_by: Optional[StopType] = StopType.ARRIVAL,
         logger: Optional[logging.Logger] = None)-> "TripsHandler":
 
         """Asynchronous factory method to initialize TripsHandler."""

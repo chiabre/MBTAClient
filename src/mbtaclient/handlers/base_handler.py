@@ -24,7 +24,7 @@ class MBTABaseHandler:
 
     FILTER_TIME_DEPARTURE_BUFFER = timedelta(minutes=2)
     FILTER_TIME_ARRIVAL_BUFFER = timedelta(minutes=1)
-    MAX_TRIPS = 50
+    DEFAULT_MAX_TRIPS = 1
 
     def __init__( self, mbta_client: MBTAClient, max_trips: Optional[int],logger: Optional[logging.Logger]):
 
@@ -51,7 +51,7 @@ class MBTABaseHandler:
         mbta_client: MBTAClient,
         departure_stop_name: Optional[str] = None ,
         arrival_stop_name: Optional[str] = None,
-        max_trips: Optional[int] = 1,
+        max_trips: Optional[int] = DEFAULT_MAX_TRIPS,
         logger: Optional[logging.Logger] = None)-> "MBTABaseHandler":
         
         instance: MBTABaseHandler = cls(mbta_client=mbta_client, max_trips=max_trips,logger=logger)
@@ -462,7 +462,7 @@ class MBTABaseHandler:
                 # Add the valid trip to the processed trips
                 filtered_trips[trip_id] = trip
 
-            return dict(list(filtered_trips.items())[:self.MAX_TRIPS])
+            return dict(list(filtered_trips.items())[:(self._max_trips * 2)])
 
         except Exception as e:
             self._logger.error(f"Error filtering trips: {e}")
