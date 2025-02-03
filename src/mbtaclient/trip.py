@@ -209,7 +209,7 @@ class Trip:
             return False
     
         now = datetime.now().astimezone()
-        seconds = (stop.departure_time.astimezone() - now).total_seconds()
+        seconds = (stop.departure_time.astimezone() - now).total_seconds() if stop.departure_time else stop.time
         current_stop = self._mbta_vehicle.current_stop_sequence if self._mbta_vehicle else None
 
         if current_stop is not None and current_stop > stop.stop_sequence:
@@ -260,7 +260,7 @@ class Trip:
             return False
         
         now = datetime.now().astimezone()
-        seconds = (stop.arrival_time.astimezone() - now).total_seconds()
+        seconds = (stop.arrival_time.astimezone() - now).total_seconds() if stop.arrival_time else stop.time
 
         current_stop = self._mbta_vehicle.current_stop_sequence if self._mbta_vehicle else None
 
@@ -405,7 +405,9 @@ class Trip:
                 return f"{minutes} min"
             elif seconds_arrival > 30:
                 return "1 min"
-
+            elif seconds_arrival > 0:
+                return "Arriving"
+            
         return None  # Just in case no condition matched
 
     def _get_stop_MBTA_countdown(self, stop_type: StopType) -> Optional[str]:
