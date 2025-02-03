@@ -385,17 +385,11 @@ class Trip:
             if vehicle_stop < stop.stop_sequence and seconds_arrival <= 30:
                 return "Late"
 
-        if stop_type == StopType.DEPARTURE:
-            if seconds_departure < 0:
+        if stop_type == StopType.DEPARTURE and seconds_departure < 0:
                 return "Departed"
-            elif 0 <= seconds_departure < 30:
-                return "Boarding"
 
-        if stop_type == StopType.ARRIVAL:
-            if seconds_arrival < 0:
+        if stop_type == StopType.ARRIVAL and seconds_arrival < 0:
                 return "Arrived"
-            elif 0 <= seconds_arrival < 30:  # Arriving (before arrival)
-                return "Arriving"
 
         # Past Times (combined, as before)
         if seconds_arrival < -60 or seconds_departure < -30:
