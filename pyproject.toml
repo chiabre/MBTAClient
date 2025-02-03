@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "MBTAclient"
-version = "1.1.14"
+version = "1.1.15"
 description = "A Python client for interacting with the MBTA API"
 readme = "README.md"
 requires-python = ">=3.12"
