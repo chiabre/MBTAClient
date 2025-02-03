@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-import re
 from typing import Union, Optional
 from datetime import datetime
 
@@ -203,6 +202,25 @@ class Trip:
     def departure_countdown(self) -> Optional[str]:
         return self._get_stop_countdown(StopType.DEPARTURE) if self._departure_stop else None
     
+    @property
+    def has_departed(self) -> bool:
+        stop = self._departure_stop
+        if not stop:  # No departure stop available
+            return False  # Or set to None/Unavailable based on your use case
+    
+        now = datetime.now().astimezone()
+        seconds = (stop.departure_time.time.astimezone() - now).total_seconds()
+
+        current_stop = self._mbta_vehicle.current_stop_sequence if self._mbta_vehicle else None
+
+        if current_stop is not None and current_stop > stop.stop_sequence:
+            return True
+        if seconds < -30:
+            return True
+
+        return False
+
+    
     #arrival stop
     @property
     def _arrival_stop(self) -> Optional[Stop]:
@@ -235,6 +253,24 @@ class Trip:
     @property
     def arrival_countdown(self) -> Optional[str]:
         return self._get_stop_countdown(StopType.ARRIVAL) if self._arrival_stop else None
+
+    @property
+    def has_arrived(self) -> bool:
+        stop = self._arrival_stop
+        if not stop:  # No departure stop available
+            return False  # Or set to None/Unavailable based on your use case
+        
+        now = datetime.now().astimezone()
+        seconds = (stop.arrival_time.time.astimezone() - now).total_seconds()
+
+        current_stop = self._mbta_vehicle.current_stop_sequence if self._mbta_vehicle else None
+
+        if current_stop is not None and current_stop > stop.stop_sequence:
+            return True
+        if seconds < -30:
+            return True
+
+        return False
     
     #alerts
     @property

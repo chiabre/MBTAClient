@@ -27,6 +27,10 @@ class StopTime:
         if self.original_time and self.updated_time:
             return self.original_time - self.updated_time
         return None
+    
+    @property
+    def time(self) -> Optional[datetime]:
+        return self.updated_time or self.original_time
 
 @dataclass
 class Stop:
@@ -93,7 +97,6 @@ class Stop:
         mbta_stop = MBTAStopObjStore.get_by_id(self.mbta_stop_id)
         if mbta_stop:
             return mbta_stop
-        #self.mbta_route_id = None
         return None
 
     @mbta_stop.setter
@@ -105,14 +108,10 @@ class Stop:
     @property
     def time(self) -> Optional[datetime]:
         """Returns the most recent time for this stop (updated or original)."""
-        if self.arrival_time and self.arrival_time.updated_time:
-            return self.arrival_time.updated_time
-        elif self.departure_time and self.departure_time.updated_time:
-            return self.departure_time.updated_time
-        elif self.arrival_time and self.arrival_time.original_time:
-            return self.arrival_time.original_time
-        elif self.departure_time and self.departure_time.original_time:
-            return self.departure_time.original_time
+        if self.arrival_time:
+            return self.arrival_time.time
+        elif self.departure_time:
+            return self.departure_time.time
         else:
             return None
 
