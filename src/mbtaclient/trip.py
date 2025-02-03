@@ -414,7 +414,7 @@ class Trip:
             return f"{minutes} min"
         elif seconds_arrival > 30:
             return "1 min"
-        elif seconds_arrival > 0:
+        elif seconds_arrival > 0 and seconds_departure > 30:
             return "Arriving"
         elif seconds_departure > 0:
             return "Boarding"
