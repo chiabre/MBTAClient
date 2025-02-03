@@ -39,9 +39,12 @@ class DeparturesHandler(MBTABaseHandler):
 
             # Initialize trips
             trips: dict[str, Trip] = {}
+            
+            # roudn to the hour to leverage caching in fetch and processing (based on header hash)
+            min_time = f"{datetime.now().strftime("%H")}:00"
 
             params = {
-                'filter[min_time]': datetime.now().strftime("%H:%M")
+                'filter[min_time]': min_time
             }
 
             # Update trip scheduling

@@ -441,6 +441,12 @@ class MBTABaseHandler:
                     not departure_stop or not arrival_stop or departure_stop.stop_sequence > arrival_stop.stop_sequence
                 ):
                     continue
+                else:
+                    # if sequence cannot be used, check that a DEPARTURE stop has departing time (is not the last stop of a trip) and ARRIVAL stop has arrival time (is not the first stop of a tirp)
+                    if departure_stop and not departure_stop.departure_time:
+                        continue
+                    if arrival_stop and not arrival_stop.arrival_time:
+                        continue
 
                 # Remove trips that have already departed (+BUFFER time)
                 if remove_departed and departure_stop.time < now - self.FILTER_TIME_DEPARTURE_BUFFER:

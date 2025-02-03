@@ -27,6 +27,10 @@ class StopTime:
         if self.original_time and self.updated_time:
             return self.original_time - self.updated_time
         return None
+    
+    @property
+    def time(self) -> Optional[datetime]:
+        return self.updated_time or self.original_time
 
 @dataclass
 class Stop:
@@ -38,8 +42,9 @@ class Stop:
     stop_sequence: int 
     arrival_time: Optional[StopTime] = None 
     departure_time: Optional[StopTime] = None
+    status: Optional[str] = None
 
-    def __init__(self, stop_type: StopType, mbta_stop_id: str, stop_sequence: int, arrival_time: Optional[datetime] = None, departure_time: Optional[datetime] = None, ):
+    def __init__(self, stop_type: StopType, mbta_stop_id: str, stop_sequence: int, arrival_time: Optional[datetime] = None, departure_time: Optional[datetime] = None, status: Optional[str] = None):
         """
         Inits the stop.
 
@@ -55,12 +60,13 @@ class Stop:
         self.stop_sequence = stop_sequence
         self.arrival_time = StopTime(arrival_time) if arrival_time else None 
         self.departure_time = StopTime(departure_time) if departure_time else None
+        self.status = status
 
     def __repr__(self) -> str:
         return (f"TripStop({self.stop_type.value}): {self.mbta_stop_id} @ {self.time.replace(tzinfo=None)}"
         )
         
-    def update_stop(self, mbta_stop_id: str ,stop_sequence: int, arrival_time: Optional[datetime] = None, departure_time: Optional[datetime] = None, ) -> None:
+    def update_stop(self, mbta_stop_id: str ,stop_sequence: int, arrival_time: Optional[datetime] = None, departure_time: Optional[datetime] = None, status: Optional[str] = None) -> None:
         """
         Updates the stop with new information.
 
@@ -72,6 +78,7 @@ class Stop:
         """
         self.mbta_stop_id = mbta_stop_id
         self.stop_sequence = stop_sequence
+        self.status = status
         
         if arrival_time:
             if not self.arrival_time:
@@ -90,7 +97,6 @@ class Stop:
         mbta_stop = MBTAStopObjStore.get_by_id(self.mbta_stop_id)
         if mbta_stop:
             return mbta_stop
-        #self.mbta_route_id = None
         return None
 
     @mbta_stop.setter
@@ -102,14 +108,10 @@ class Stop:
     @property
     def time(self) -> Optional[datetime]:
         """Returns the most recent time for this stop (updated or original)."""
-        if self.arrival_time and self.arrival_time.updated_time:
-            return self.arrival_time.updated_time
-        elif self.departure_time and self.departure_time.updated_time:
-            return self.departure_time.updated_time
-        elif self.arrival_time and self.arrival_time.original_time:
-            return self.arrival_time.original_time
-        elif self.departure_time and self.departure_time.original_time:
-            return self.departure_time.original_time
+        if self.arrival_time:
+            return self.arrival_time.time
+        elif self.departure_time:
+            return self.departure_time.time
         else:
             return None
 
