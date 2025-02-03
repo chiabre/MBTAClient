@@ -23,7 +23,7 @@ class Trip:
     _mbta_alerts_ids: set[Optional[str]] = field(default_factory=set)
     stops: list[Optional['Stop']] = field(default_factory=list)
 
-    DATA_FRESHNESS_THRESHOLD = 60  # seconds
+    DATA_FRESHNESS_THRESHOLD = 90  # seconds
 
     # registry 
     @property
