@@ -18,12 +18,10 @@ from ..models.mbta_schedule import MBTASchedule
 from ..models.mbta_prediction import MBTAPrediction, MBTAScheduleRelationship
 from ..models.mbta_alert import MBTAAlert, MBTAAlertPassengerActivity, MBTAAlertsInformedEntity
 
-
-
 class MBTABaseHandler:
 
-    FILTER_TIME_DEPARTURE_BUFFER = timedelta(minutes=2)
-    FILTER_TIME_ARRIVAL_BUFFER = timedelta(minutes=1)
+    FILTER_TIME_DEPARTURE_BUFFER = timedelta(seconds=90)
+    FILTER_TIME_ARRIVAL_BUFFER = timedelta(seconds=60)
     DEFAULT_MAX_TRIPS = 1
 
     def __init__( self, mbta_client: MBTAClient, max_trips: Optional[int],logger: Optional[logging.Logger]):
@@ -442,28 +440,28 @@ class MBTABaseHandler:
                 ):
                     continue
                 else:
-                    # if sequence cannot be used, check that a DEPARTURE stop has departing time (is not the last stop of a trip) and ARRIVAL stop has arrival time (is not the first stop of a tirp)
-                    if departure_stop and not departure_stop.departure_time:
+                    # if sequence cannot be used, check that a DEPARTURE stop has departure Time obj (is not the last stop of a trip) and ARRIVAL stop has arrival Time obj (is not the first stop of a tirp)
+                    if departure_stop and not departure_stop.departure:
                         continue
-                    if arrival_stop and not arrival_stop.arrival_time:
+                    if arrival_stop and not arrival_stop.arrival:
                         continue
 
                 # Remove trips that have already departed (+BUFFER time)
-                if remove_departed and departure_stop.time < now - self.FILTER_TIME_DEPARTURE_BUFFER:
+                if remove_departed and departure_stop.departure_time and departure_stop.departure_time < now - self.FILTER_TIME_DEPARTURE_BUFFER:
                     continue
 
                 # Remove trips that have already arrived (+BUFFER time)
-                if arrival_stop and arrival_stop.time and arrival_stop.time < now - self.FILTER_TIME_ARRIVAL_BUFFER:
+                if arrival_stop and arrival_stop.arrival_time and arrival_stop.arrival_time < now - self.FILTER_TIME_ARRIVAL_BUFFER:
                     continue
 
                 # If vehicle data is available, use it for filtering
-                vehicle_stop_sequence = trip._mbta_vehicle.current_stop_sequence if trip._mbta_vehicle else None
+                if trip._mbta_vehicle:
 
-                if remove_departed and vehicle_stop_sequence and vehicle_stop_sequence > departure_stop.stop_sequence:
-                    continue  # If the vehicle has passed the departure stop, filter it out
+                    if remove_departed and departure_stop and trip.has_departed:
+                        continue  # If the vehicle has passed the departure stop, filter it out
 
-                if arrival_stop and vehicle_stop_sequence and vehicle_stop_sequence >= arrival_stop.stop_sequence:
-                    continue  # If the vehicle has passed or is at the arrival stop, filter it out
+                    if arrival_stop and trip.has_arrived:
+                        continue  # If the vehicle has passed the arrival stop, filter it out
 
                 # Add the valid trip to the processed trips
                 filtered_trips[trip_id] = trip
