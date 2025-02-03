@@ -38,8 +38,9 @@ class Stop:
     stop_sequence: int 
     arrival_time: Optional[StopTime] = None 
     departure_time: Optional[StopTime] = None
+    status: Optional[str] = None
 
-    def __init__(self, stop_type: StopType, mbta_stop_id: str, stop_sequence: int, arrival_time: Optional[datetime] = None, departure_time: Optional[datetime] = None, ):
+    def __init__(self, stop_type: StopType, mbta_stop_id: str, stop_sequence: int, arrival_time: Optional[datetime] = None, departure_time: Optional[datetime] = None, status: Optional[str] = None):
         """
         Inits the stop.
 
@@ -55,12 +56,13 @@ class Stop:
         self.stop_sequence = stop_sequence
         self.arrival_time = StopTime(arrival_time) if arrival_time else None 
         self.departure_time = StopTime(departure_time) if departure_time else None
+        self.status = status
 
     def __repr__(self) -> str:
         return (f"TripStop({self.stop_type.value}): {self.mbta_stop_id} @ {self.time.replace(tzinfo=None)}"
         )
         
-    def update_stop(self, mbta_stop_id: str ,stop_sequence: int, arrival_time: Optional[datetime] = None, departure_time: Optional[datetime] = None, ) -> None:
+    def update_stop(self, mbta_stop_id: str ,stop_sequence: int, arrival_time: Optional[datetime] = None, departure_time: Optional[datetime] = None, status: Optional[str] = None) -> None:
         """
         Updates the stop with new information.
 
@@ -72,6 +74,7 @@ class Stop:
         """
         self.mbta_stop_id = mbta_stop_id
         self.stop_sequence = stop_sequence
+        self.status = status
         
         if arrival_time:
             if not self.arrival_time:
