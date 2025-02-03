@@ -362,7 +362,7 @@ class Trip:
 
         # Calculate deltas once
         arrival_delta = stop.arrival_time.astimezone() - now if stop.arrival_time else stop.time.astimezone() - now
-        departure_delta = stop.departure_time.astimezone() - now if stop.departure_time else stop.time.astimezone()
+        departure_delta = stop.departure_time.astimezone() - now if stop.departure_time else stop.time.astimezone() - now
         seconds_arrival = int(arrival_delta.total_seconds())
         seconds_departure = int(departure_delta.total_seconds())
 
