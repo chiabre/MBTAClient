@@ -362,7 +362,7 @@ class Trip:
             seconds = (stop.time.astimezone() - now).total_seconds()
             seconds_arrival = (stop.arrival_time.astimezone() - now).total_seconds() if stop.arrival_time else seconds
             seconds_departure = (stop.departure_time.astimezone() - now).total_seconds() if stop.departure_time else seconds
-                        
+                            
             # ✅ Vehicle data overrides general countdown logic when fresh
             if self._mbta_vehicle and self.is_vehicle_data_fresh:
             
@@ -377,7 +377,7 @@ class Trip:
                 if vehicle_stop == stop.stop_sequence:
                     if vehicle_status == "STOPPED_AT" and -30 <= seconds_arrival <= 90:
                         return "Boarding"
-                    if vehicle_status == "INCOMING_AT" and -30 <= seconds_arrival <= 60:
+                    if (vehicle_status == "INCOMING_AT" and -30 <= seconds_arrival <= 90):
                         return "Arriving"
 
                 if vehicle_stop < stop.stop_sequence and seconds_arrival <= 30:
@@ -388,12 +388,20 @@ class Trip:
                 return "Departed"
             if stop_type == StopType.ARRIVAL and seconds_arrival < -30:
                 return "Arrived"
-            
-            # ✅ Grace period for boarding
-            if -30 <= seconds_departure <= 30:
-                return "Boarding"
 
-            # ✅ Convert remaining time into readable format
+            # ✅ Countdown status based on time ranges
+            
+            if 30 < seconds_arrival < 10:
+                return "Arriving"
+            
+            if seconds_arrival < 10 and seconds_departure < 30:
+                return "Boarding"
+            
+            # ✅ If the time is negative, return None (or appropriate message like "Past")
+            if seconds_arrival < -30 or seconds_departure < -30:
+                return None
+            
+            # ✅ Format remaining time into readable format if more than 1 minute
             minutes = int(seconds_arrival // 60)
             hours = minutes // 60
             days = hours // 24
@@ -409,10 +417,8 @@ class Trip:
                 return f"{minutes} min"
             elif seconds_arrival > 30:
                 return "1 min"
-            elif seconds_arrival > 0:
-                return "Arriving"
-            elif seconds_arrival <= -30:
-                return None
+
+            return None  # Just in case no condition matched
             
         return None  # Just in case no condition matched
 
