@@ -369,13 +369,15 @@ class Trip:
                 vehicle_stop = self._mbta_vehicle.current_stop_sequence
                 vehicle_status = self._mbta_vehicle.current_status
 
-                if vehicle_stop > stop.stop_sequence:
-                    return "Departed" if stop_type == StopType.DEPARTURE else "Arrived"
+                if stop_type == StopType.DEPARTURE and vehicle_stop > stop.stop_sequence:
+                    return "Departed"
+                if stop_type == StopType.ARRIVAL and vehicle_stop > stop.stop_sequence:
+                    return "Arrived"
 
                 if vehicle_stop == stop.stop_sequence:
-                    if vehicle_status == "STOPPED_AT" and seconds_arrival <= 90:
+                    if vehicle_status == "STOPPED_AT" and -30 <= seconds_arrival <= 90:
                         return "Boarding"
-                    if (vehicle_status == "INCOMING_AT" and seconds_arrival <= 90) or seconds_arrival <= 30:
+                    if vehicle_status == "INCOMING_AT" and -30 <= seconds_arrival <= 60:
                         return "Arriving"
 
                 if vehicle_stop < stop.stop_sequence and seconds_arrival <= 30:
@@ -386,7 +388,9 @@ class Trip:
                 return "Departed"
             if stop_type == StopType.ARRIVAL and seconds_arrival < -30:
                 return "Arrived"
-            if -30 <= seconds_arrival <= 30 or -30 <= seconds_departure <= 30:
+            
+            # ✅ Grace period for boarding
+            if -30 <= seconds_departure <= 30:
                 return "Boarding"
 
             # ✅ Convert remaining time into readable format
@@ -407,10 +411,11 @@ class Trip:
                 return "1 min"
             elif seconds_arrival > 0:
                 return "Arriving"
-            elif seconds_arrival < 0:
-                return None 
+            elif seconds_arrival <= -30:
+                return None
             
         return None  # Just in case no condition matched
+
 
     def _get_stop_MBTA_countdown(self, stop_type: StopType) -> Optional[str]:
         """Determine the countdown to a stop based on vehicle and time following
