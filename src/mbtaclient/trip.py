@@ -372,15 +372,17 @@ class Trip:
             vehicle_stop = self._mbta_vehicle.current_stop_sequence
             vehicle_status = self._mbta_vehicle.current_status
 
-            if stop_type == StopType.DEPARTURE and vehicle_stop > stop.stop_sequence:
-                return "Departed"
-            if stop_type == StopType.ARRIVAL and vehicle_stop > stop.stop_sequence:
-                return "Arrived"
+            if vehicle_stop > stop.stop_sequence:
+                if stop_type == StopType.DEPARTURE:
+                    return "Departed"
+                if stop_type == StopType.ARRIVAL:
+                    return "Arrived"
             
-            if vehicle_status == "STOPPED_AT" and -30 <= seconds_arrival <= 90:
-                return "Boarding"
-            if vehicle_status == "INCOMING_AT" and -30 <= seconds_arrival <= 90:
-                return "Arriving"
+            if vehicle_stop == stop.stop_sequence:
+                if vehicle_status == "STOPPED_AT" and -30 <= seconds_departure <= 90:
+                    return "Boarding"
+                if vehicle_status == "INCOMING_AT" and -30 <= seconds_arrival <= 30:
+                    return "Arriving"
 
             if vehicle_stop < stop.stop_sequence and seconds_arrival <= 30:
                 return "Late"
