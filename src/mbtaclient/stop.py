@@ -25,7 +25,7 @@ class Time:
     @property
     def deltatime(self) -> Optional[timedelta]:
         if self.original_time and self.updated_time:
-            return self.original_time - self.updated_time
+            return self.updated_time - self.original_time
         return None
     
     @property

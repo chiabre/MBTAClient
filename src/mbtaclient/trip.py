@@ -23,7 +23,8 @@ class Trip:
     _mbta_alerts_ids: set[Optional[str]] = field(default_factory=set)
     stops: list[Optional['Stop']] = field(default_factory=list)
 
-    DATA_FRESHNESS_THRESHOLD = 90  # seconds
+    
+    VEHICLE_DATA_FRESHNESS_THRESHOLD = 90  # seconds
 
     # registry 
     @property
@@ -166,7 +167,7 @@ class Trip:
         if self._mbta_vehicle and self._mbta_vehicle.updated_at:
             now =  datetime.now().astimezone() # Ensure consistent timezone handling
             delta = (now - self._mbta_vehicle.updated_at).total_seconds()
-            return delta <= self.DATA_FRESHNESS_THRESHOLD
+            return delta <= self.VEHICLE_DATA_FRESHNESS_THRESHOLD
         return False
 
     #departure stop
