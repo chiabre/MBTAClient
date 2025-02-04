@@ -361,9 +361,13 @@ class Trip:
 
         now = datetime.now().astimezone()
 
-        # Calculate deltas once
-        arrival_delta = stop.arrival_time.astimezone() - now if stop.arrival_time else stop.time.astimezone() - now
-        departure_delta = stop.departure_time.astimezone() - now if stop.departure_time else stop.time.astimezone() - now
+        # Calculate time deltas
+        arrival_time = stop.arrival_time or stop.time
+        departure_time = stop.departure_time or stop.time
+
+        arrival_delta = arrival_time.astimezone() - now
+        departure_delta = departure_time.astimezone() - now
+
         seconds_arrival = int(arrival_delta.total_seconds())
         seconds_departure = int(departure_delta.total_seconds())
 
@@ -372,7 +376,7 @@ class Trip:
         
             vehicle_stop = self._mbta_vehicle.current_stop_sequence
             vehicle_status = self._mbta_vehicle.current_status
-
+            
             if vehicle_stop > stop.stop_sequence:
                 if stop_type == StopType.DEPARTURE:
                     return "Departed"
@@ -380,48 +384,25 @@ class Trip:
                     return "Arrived"
             
             if vehicle_stop == stop.stop_sequence:
-                if vehicle_status == "STOPPED_AT" and -30 <= seconds_departure <= 90:
+                if stop_type == StopType.DEPARTURE and vehicle_status == "STOPPED_AT" and 0 <= seconds_departure <= 90:
                     return "Boarding"
-                if vehicle_status == "INCOMING_AT" and -30 <= seconds_arrival <= 30:
+                if vehicle_status == "INCOMING_AT" and 0 <= seconds_arrival <= 90:
                     return "Arriving"
 
-            if vehicle_stop < stop.stop_sequence and seconds_arrival <= 30:
-                return "Late"
-
+        # Handle status messages
         if stop_type == StopType.DEPARTURE and seconds_departure < 0:
                 return "Departed"
-
         if stop_type == StopType.ARRIVAL and seconds_arrival < 0:
                 return "Arrived"
-
-        # Past Times (combined, as before)
-        if seconds_arrival < -60 or seconds_departure < -30:
-            return None  # Or "Past"
-
-        # Countdown formatting (improved)
-        abs_seconds = abs(seconds_arrival)
-        minutes = int(abs_seconds // 60)
-        hours = minutes // 60
-        days = hours // 24
-
-        minutes %= 60
-        hours %= 24
-
-        if days > 0:
-            return f"{days}d {hours}h {minutes}m"
-        elif hours > 0:
-            return f"{hours}h {minutes}m"
-        elif minutes > 1:
-            return f"{minutes} min"
-        elif seconds_arrival > 30:
-            return "1 min"
-        elif seconds_arrival > 0 and seconds_departure > 30:
-            return "Arriving"
-        elif seconds_departure > 0:
+    
+        # Prioritize boarding over arriving
+        if stop_type == StopType.DEPARTURE and 0 <= seconds_departure < 30:
             return "Boarding"
-
-        return None  # All conditions exhausted
-
+        if 0 <= seconds_arrival < 30 and seconds_departure > 0:
+            return "Arriving"
+    
+        # Default to formatted time countdown
+        return self._format_time(seconds_arrival) if seconds_arrival >= 30 else None
 
     def _get_stop_MBTA_countdown(self, stop_type: StopType) -> Optional[str]:
         """Determine the countdown to a stop based on vehicle and time following
@@ -459,3 +440,18 @@ class Trip:
             return f"{minutes} min"
         
         return None
+
+   # Convert time to human-readable format
+    def _format_time(self, seconds: int) -> str:
+        abs_seconds = abs(seconds)
+        minutes = (abs_seconds // 60) % 60
+        hours = (abs_seconds // 3600) % 24
+        days = abs_seconds // 86400
+
+        if days > 0:
+            return f"{days}d {hours}h {minutes}m"
+        if hours > 0:
+            return f"{hours}h {minutes}m"
+        if minutes > 1:
+            return f"{minutes} min"
+        return "1 min"
