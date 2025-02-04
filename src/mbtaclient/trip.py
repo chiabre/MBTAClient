@@ -442,11 +442,12 @@ class Trip:
         return None
 
    # Convert time to human-readable format
-    def _format_time(self, seconds: int) -> str:
-        abs_seconds = abs(seconds)
-        minutes = (abs_seconds // 60) % 60
-        hours = (abs_seconds // 3600) % 24
-        days = abs_seconds // 86400
+    def _format_time(self, seconds: int) -> Optional[str]:
+        if seconds < 0:
+            return None
+        minutes = (seconds // 60) % 60
+        hours = (seconds // 3600) % 24
+        days = seconds // 86400
 
         if days > 0:
             return f"{days}d {hours}h {minutes}m"
