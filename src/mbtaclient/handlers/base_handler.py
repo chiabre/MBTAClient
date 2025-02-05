@@ -207,7 +207,6 @@ class MBTABaseHandler:
                         trips.pop(scheduling.trip_id)
                     # skip this scheduling
                     continue
-                
                 # If the trip of the prediction is not in the trips dict
                 if scheduling.trip_id not in trips:
                     # Create the trip
@@ -215,8 +214,8 @@ class MBTABaseHandler:
                 else:
                     # Or get the trip with same trop_id from the trips
                     trip = trips[scheduling.trip_id]
-                    
-                #Set the mbta_route for the trip, 
+
+                #Set the mbta_route for the trip,
                 if not trip.mbta_route and scheduling.route_id:
                     # if the route in the objStore
                     if MBTARouteObjStore.get_by_id(scheduling.route_id):
@@ -227,13 +226,13 @@ class MBTABaseHandler:
                         mbta_route, _ = await self._mbta_client.fetch_route(scheduling.route_id)
                         # set the route for the trip (it will set the route id and store the obj in the objstore)
                         trip.mbta_route = mbta_route
-                
+
                 # if route type 0 or 1 and MBTASchedule skipp
                 #https://www.mbta.com/developers/v3-api/best-practices#predictions
                 if trip.mbta_route.type in [0,1] and isinstance(scheduling, MBTASchedule):
                     #Unfortunately in some corner cases there may be more trips type for the same trip...cannot break
                     continue
-                    
+
                 # Check if the prediction stop_id is in the departure stops lists
                 if scheduling.stop_id in self._mbta_stops_ids[StopType.DEPARTURE]:
                     #add/update the stop as departure
@@ -248,11 +247,11 @@ class MBTABaseHandler:
                         stop_type=StopType.ARRIVAL,
                         scheduling=scheduling,
                         mbta_stop_id=scheduling.stop_id)
-                    
+
                 trips[scheduling.trip_id] = trip
-                    
+
             return trips
-        
+
         except Exception as e:
             self._logger.error(f"Error while processing scheduling: {e}")
             self._logger.error(traceback.format_exc())  # Log the stack trace
@@ -262,20 +261,20 @@ class MBTABaseHandler:
         if any(stop_id in stop_ids for stop_ids in self._mbta_stops_ids.values()):
             return MBTAStopObjStore.get_by_id(stop_id)
         return None
-    
-        
+
+
     ## SET TRIP DETAILS
     async def _update_details(self, trips: dict[str, Trip]) -> dict[str, Trip]:
         """Update trip details with MBTA trip, vehicle, and alert information."""
         self._logger.debug("Updating trips details")
-        
+
         try:
             updated_trips: dict[str, Trip] = {}
 
             # Collect all trip IDs to fetch vehicles
             params = {'filter[trip]': ','.join(trips.keys())}
             mbta_stop_ids = self._mbta_stops_ids.get(StopType.DEPARTURE, []) + self._mbta_stops_ids.get(StopType.ARRIVAL, [])
-            
+
             # Fetch vehicles and alerts concurrently
             task_vehicles = asyncio.create_task(self._mbta_client.fetch_vehicles(params))
             task_alerts = asyncio.create_task(self.__get_mbta_alerts(trips=trips, stops_ids=mbta_stop_ids))
@@ -305,7 +304,7 @@ class MBTABaseHandler:
                 for mbta_alert in mbta_alerts:
                     if mbta_alert not in processed_alerts and mbta_alert.severity > 1 and self.__is_alert_relevant(mbta_alert, trip):
                         processed_alerts.append(mbta_alert)
-                        
+
                 # Sort processed_alerts by severity (high to low)
                 processed_alerts.sort(key=lambda mbta_alert: mbta_alert.severity, reverse=True)
 
@@ -323,7 +322,7 @@ class MBTABaseHandler:
 
     async def __get_mbta_alerts(
         self,
-        trips: Optional[dict[str, Trip]] = None, 
+        trips: Optional[dict[str, Trip]] = None,
         stops_ids: Optional[list[str]] =  None)-> Tuple[list[MBTAAlert],str]:
         self._logger.debug("Updating MBTA alerts")
         try:
@@ -342,7 +341,7 @@ class MBTABaseHandler:
         except Exception as e:
             self._logger.error(f"Error updating MBTA alerts: {e}")
             raise
-        
+
     def __is_alert_relevant(self, mbta_alert: MBTAAlert, trip: Trip) -> bool:
         """
         Determines whether an MBTA alert is relevant to a specific trip.
@@ -360,9 +359,9 @@ class MBTABaseHandler:
             - The alert's informed entity is tied to the departure or arrival stops with relevant activities (boarding or exiting).
             - The trip's departure or arrival time falls within the alert's active period.
         """
-        
+
         try:
-            
+
             def check_route_level_alert(informed_entity: MBTAAlertsInformedEntity):
                 """
                 Check if the informed entity is a route-level alert matching the trip's route and direction.
@@ -379,37 +378,50 @@ class MBTABaseHandler:
                     not informed_entity.trip_id and
                     (not informed_entity.direction_id or informed_entity.direction_id == trip.mbta_trip.direction_id)
                 )
-            
+
             trip_id = trip.mbta_trip.id if trip.mbta_trip else None
             departure_stop_id = trip.get_stop_id_by_stop_type(StopType.DEPARTURE)
             arrival_stop_id = trip.get_stop_id_by_stop_type(StopType.ARRIVAL)
 
             for informed_entity in mbta_alert.informed_entities:
-                
+
                 active_period_start = mbta_alert.active_period_start.replace(tzinfo=None)
                 active_period_end = mbta_alert.active_period_end.replace(tzinfo=None)
-                
+
                 try:
                     if (
-                        check_route_level_alert(informed_entity) or
-                        informed_entity.trip_id == trip_id or
-                        (
-                            informed_entity.stop_id == departure_stop_id and 
-                            MBTAAlertPassengerActivity.BOARD in informed_entity.activities
-                        ) or
-                        (
-                            informed_entity.stop_id == arrival_stop_id and 
-                            MBTAAlertPassengerActivity.EXIT in informed_entity.activities
+                        check_route_level_alert(informed_entity)
+                        or informed_entity.trip_id == trip_id
+                        or (
+                            informed_entity.stop_id == departure_stop_id
+                            and MBTAAlertPassengerActivity.BOARD in informed_entity.activities
+                        )
+                        or (
+                            informed_entity.stop_id == arrival_stop_id
+                            and MBTAAlertPassengerActivity.EXIT in informed_entity.activities
                         )
                     ) and (
                         (
-                            trip.departure_time and 
-                            (active_period_start is None or active_period_start <= trip.departure_time) and 
-                            (active_period_end is None or trip.departure_time <= active_period_end)
-                        ) or (
-                            trip.arrival_time and 
-                            (active_period_start is None or active_period_start <= trip.arrival_time) and 
-                            (active_period_end is None or trip.arrival_time <= active_period_end)
+                            trip.departure_time
+                            and (
+                                active_period_start is None
+                                or active_period_start <= trip.departure_time
+                            )
+                            and (
+                                active_period_end is None
+                                or trip.departure_time <= active_period_end
+                            )
+                        )
+                        or (
+                            trip.arrival_time
+                            and (
+                                active_period_start is None
+                                or active_period_start <= trip.arrival_time
+                            )
+                            and (
+                                active_period_end is None
+                                or trip.arrival_time <= active_period_end
+                            )
                         )
                     ):
                         return True
@@ -432,16 +444,16 @@ class MBTABaseHandler:
         remove_departed: Optional[bool] = True,
         require_both_stops: Optional[bool] = True,
         sort_by: Optional[StopType] = StopType.DEPARTURE) -> dict[str, Trip]:
-       
+
         """Filter and sort trips based on conditions like direction, departure, and arrival times."""
         self._logger.debug("Filtering Trips")
         now = datetime.now().astimezone()
         filtered_trips: dict[str, Trip] = {}
 
         try:
-   
+
             trips = self._sort_trips(trips, sort_by)
-            
+
             for trip_id, trip in trips.items():
                 departure_stop = trip.get_stop_by_type(StopType.DEPARTURE)
                 arrival_stop = trip.get_stop_by_type(StopType.ARRIVAL)
@@ -498,7 +510,7 @@ class MBTABaseHandler:
                 for trip_id, trip in sorted(
                     trips.items(),
                     key=lambda item: (
-                        item[1].get_stop_by_type(sort_by).time 
+                        item[1].get_stop_by_type(sort_by).time
                         if item[1].get_stop_by_type(sort_by) and item[1].get_stop_by_type(sort_by).time is not None
                         else (today + timedelta(days=365)).astimezone()
                     )
@@ -512,7 +524,7 @@ class MBTABaseHandler:
             raise
 
     async def _update_mbta_stops_for_trips(self, trips: list[Trip]) -> None:
-        
+
         for trip in trips:
             params = {
                     'filter[route]': trip.mbta_route.id,
@@ -523,6 +535,6 @@ class MBTABaseHandler:
                 if mbta_stop.id not in self._mbta_stops_ids or not MBTAStopObjStore.get_by_id(mbta_stop.id):
                     self._mbta_trip_stops_ids.add(mbta_stop.id)
                     MBTAStopObjStore.store(mbta_stop)
-                    
+
 class MBTAStopError(Exception):
     pass

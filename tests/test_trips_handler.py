@@ -87,25 +87,25 @@ async def test_handler(departure_stop_name, arrival_stop_name, route_type):
         trips = await handler.update()
 
         for trip in trips:
-                # Validate essential trip properties
-                assert trip.mbta_route is not None, f"Trip is missing route information for {departure_stop_name} or {arrival_stop_name}"
-                assert trip.mbta_trip is not None, f"Trip is missing trip information for {departure_stop_name} or {arrival_stop_name}"
-                assert trip.departure_time is not None, f"Trip is missing departure time for {departure_stop_name} or {arrival_stop_name}"
-                
-                # Route type-specific validations
-                if trip.mbta_route.type in [1, 2]:  # Heavy Rail or Commuter Rail
-                    assert trip.departure_platform is not None, (
-                        f"Rail trip at stop {departure_stop_name} must have a platform name."
-                    )
-                
-                # Ensure trips belong to the expected route type
-                assert any(route_type_part in trip.route_description for route_type_part in route_type.split(" + ")), (
-                    f"Route type mismatch for stop: {departure_stop_name} or {arrival_stop_name}. "
-                    f"Expected one of {route_type}, but got {trip.route_description}."
+            # Validate essential trip properties
+            assert trip.mbta_route is not None, f"Trip is missing route information for {departure_stop_name} or {arrival_stop_name}"
+            assert trip.mbta_trip is not None, f"Trip is missing trip information for {departure_stop_name} or {arrival_stop_name}"
+            assert trip.departure_time is not None, f"Trip is missing departure time for {departure_stop_name} or {arrival_stop_name}"
+            
+            # Route type-specific validations
+            if trip.mbta_route.type in [1, 2]:  # Heavy Rail or Commuter Rail
+                assert trip.departure_platform is not None, (
+                    f"Rail trip at stop {departure_stop_name} must have a platform name."
                 )
-                
-                # Print trip details for debugging
-                properties = [attr for attr in dir(Trip) if isdatadescriptor(getattr(Trip, attr))]
-                for property_name in properties:
-                    print(f"trip.{property_name}: {getattr(trip, property_name)}")  
-                print("##############")  
+            
+            # Ensure trips belong to the expected route type
+            assert any(route_type_part in trip.route_description for route_type_part in route_type.split(" + ")), (
+                f"Route type mismatch for stop: {departure_stop_name} or {arrival_stop_name}. "
+                f"Expected one of {route_type}, but got {trip.route_description}."
+            )
+            
+            # Print trip details for debugging
+            properties = [attr for attr in dir(Trip) if isdatadescriptor(getattr(Trip, attr))]
+            for property_name in properties:
+                print(f"trip.{property_name}: {getattr(trip, property_name)}")  
+            print("##############")  
