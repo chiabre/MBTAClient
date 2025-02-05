@@ -221,7 +221,7 @@ class MBTABaseHandler:
                     # if the route in the objStore
                     if MBTARouteObjStore.get_by_id(scheduling.route_id):
                         # set the route id for the trip
-                        trip.mbta_route.id = scheduling.route_id
+                        trip._mbta_route_id = scheduling.route_id
                     else:
                         # fetch the route
                         mbta_route, _ = await self._mbta_client.fetch_route(scheduling.route_id)

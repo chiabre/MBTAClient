@@ -61,7 +61,7 @@ class Trip:
         return MBTAVehicleObjStore.get_by_id(self._mbta_vehicle_id)
 
     @mbta_vehicle.setter
-    def _mbta_vehicle(self, mbta_vehicle: MBTAVehicle) -> None:
+    def mbta_vehicle(self, mbta_vehicle: MBTAVehicle) -> None:
         if mbta_vehicle:
             self._mbta_vehicle_id = mbta_vehicle.id
             MBTAVehicleObjStore.store(mbta_vehicle)
@@ -75,7 +75,7 @@ class Trip:
         return mbta_alerts
 
     @mbta_alerts.setter
-    def _mbta_alerts(self, mbta_alerts: list[MBTAAlert]) -> None:
+    def mbta_alerts(self, mbta_alerts: list[MBTAAlert]) -> None:
         if mbta_alerts:
             for mbta_alert in mbta_alerts:
                 self._mbta_alerts_ids.add(mbta_alert.id)
