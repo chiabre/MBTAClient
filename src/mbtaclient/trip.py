@@ -385,13 +385,24 @@ class Trip:
                 if stop_type == StopType.DEPARTURE:
                     return "Departed"
                 if stop_type == StopType.ARRIVAL:
-                    return "Arrived"
+                    return "Arrived"        
 
             if vehicle_stop == stop.stop_sequence:
-                if stop_type == StopType.DEPARTURE and vehicle_status == "STOPPED_AT" and 0 <= seconds_departure <= 90:
-                    return "Boarding"
-                if vehicle_status == "INCOMING_AT" and 0 <= seconds_arrival <= 90:
-                    return "Arriving"
+                if stop_type == StopType.ARRIVAL:
+                    return "Arrived"
+                     
+                since_last_update = int((self.mbta_vehicle.updated_at.astimezone() - now).total_seconds())
+                #if vehicle data is recent ignore the departure/arrival times
+                if since_last_update < 15:
+                        if stop_type == StopType.DEPARTURE and vehicle_status == "STOPPED_AT":
+                            return "Boarding"
+                        if vehicle_status == "INCOMING_AT":
+                            return "Arriving"
+                else:
+                    if stop_type == StopType.DEPARTURE and vehicle_status == "STOPPED_AT" and 0 <= seconds_departure <= 90:
+                        return "Boarding"
+                    if vehicle_status == "INCOMING_AT" and 0 <= seconds_arrival <= 90:
+                        return "Arriving"
 
         # Handle status messages
         if stop_type == StopType.DEPARTURE and seconds_departure < 0:
