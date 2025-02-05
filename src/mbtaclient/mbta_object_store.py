@@ -99,9 +99,9 @@ class MBTAStopObjStore(MBTABaseObjStore[MBTAStop]):
                     # Move the found stop to the end to mark it as recently used
                     cls._registry.move_to_end(stop_id)
                     return stop
-                
+
         return None  # Return None if no stop contains the child_stop_id
-    
+
 
 class MBTATripObjStore(MBTASizedObjStore[MBTATrip]):
     """Capped registry for MBTA Trip objects."""

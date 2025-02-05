@@ -15,22 +15,24 @@ class Time:
     """
     Represents a time with optional original and updated values.
     """
-    original_time: Optional[datetime] = None
-    updated_time: Optional[datetime] = None
-        
-    def __init__(self, original_time: Optional[datetime] = None):
-        self.original_time = original_time
-        self.updated_time: Optional[datetime] = None
+    scheduled_time: Optional[datetime] = None
+    predicted_time: Optional[datetime] = None
+
+    def __init__(self, scheduled_time: Optional[datetime] = None):
+        self.scheduled_time = scheduled_time
+        self.predicted_time: Optional[datetime] = None
 
     @property
     def deltatime(self) -> Optional[timedelta]:
-        if self.original_time and self.updated_time:
-            return self.original_time - self.updated_time
+        if self.scheduled_time and self.predicted_time:
+            return self.predicted_time - self.scheduled_time
+        if self.scheduled_time:
+            return timedelta(seconds=0)
         return None
-    
+
     @property
     def time(self) -> Optional[datetime]:
-        return self.updated_time or self.original_time
+        return self.predicted_time or self.scheduled_time
 
 @dataclass
 class Stop:
@@ -40,11 +42,18 @@ class Stop:
     stop_type: StopType
     mbta_stop_id: str
     stop_sequence: int
-    arrival: Optional[Time] = None 
+    arrival: Optional[Time] = None
     departure: Optional[Time] = None
     status: Optional[str] = None
 
-    def __init__(self, stop_type: StopType, mbta_stop_id: str, stop_sequence: int, arrival_time: Optional[datetime] = None, departure_time: Optional[datetime] = None, status: Optional[str] = None):
+    def __init__(
+        self,
+        stop_type: StopType,
+        mbta_stop_id: str,
+        stop_sequence: int,
+        arrival_time: Optional[datetime] = None,
+        departure_time: Optional[datetime] = None,
+        status: Optional[str] = None):
         """
         Inits the stop.
 
@@ -58,8 +67,8 @@ class Stop:
         self.stop_type = stop_type
         self.mbta_stop_id = mbta_stop_id
         self.stop_sequence = stop_sequence
-        self.arrival = Time(arrival_time) if arrival_time else None 
-        self.departure = Time(departure_time) if departure_time else None
+        self.arrival = Time(scheduled_time=arrival_time) if arrival_time else None
+        self.departure = Time(scheduled_time=departure_time) if departure_time else None
         self.status = status
 
     @property
@@ -75,7 +84,7 @@ class Stop:
         """Set the MBTAStop and add it to the registry."""
         self.mbta_stop_id = mbta_stop.id  # Update the stop ID
         MBTAStopObjStore.store(mbta_stop)  # Add to store
-        
+
     @property
     def arrival_time(self) -> Optional[datetime]:
         if self.arrival and self.arrival.time:
@@ -111,12 +120,18 @@ class Stop:
         if self.time:
             return self.time.astimezone() - datetime.now().astimezone()
         return None
-    
+
     def __repr__(self) -> str:
         return (f"TripStop({self.stop_type.value}): {self.mbta_stop_id} @ {self.time.replace(tzinfo=None)}"
         )
-        
-    def update_stop(self, mbta_stop_id: str ,stop_sequence: int, arrival_time: Optional[datetime] = None, departure_time: Optional[datetime] = None, status: Optional[str] = None) -> None:
+
+    def update_stop(
+        self,
+        mbta_stop_id: str,
+        stop_sequence: int,
+        arrival_time: Optional[datetime] = None,
+        departure_time: Optional[datetime] = None,
+        status: Optional[str] = None) -> None:
         """
         Updates the stop with new information.
 
@@ -129,14 +144,14 @@ class Stop:
         self.mbta_stop_id = mbta_stop_id
         self.stop_sequence = stop_sequence
         self.status = status
-        
+
         if arrival_time:
             if not self.arrival:
-                self.arrival = Time(arrival_time)
+                self.arrival = Time(scheduled_time=arrival_time)
             else:
-                self.arrival.updated_time = arrival_time
+                self.arrival.predicted_time = arrival_time
         if departure_time:
             if not self.departure:
-                self.departure = Time(departure_time)
+                self.departure = Time(scheduled_time=departure_time)
             else:
-                self.departure.updated_time = departure_time
+                self.departure.predicted_time = departure_time
