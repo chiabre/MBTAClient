@@ -17,7 +17,7 @@ class Time:
     """
     scheduled_time: Optional[datetime] = None
     predicted_time: Optional[datetime] = None
-        
+
     def __init__(self, scheduled_time: Optional[datetime] = None):
         self.scheduled_time = scheduled_time
         self.predicted_time: Optional[datetime] = None
@@ -29,7 +29,7 @@ class Time:
         if self.scheduled_time:
             return timedelta(seconds=0)
         return None
-    
+
     @property
     def time(self) -> Optional[datetime]:
         return self.predicted_time or self.scheduled_time
@@ -42,11 +42,18 @@ class Stop:
     stop_type: StopType
     mbta_stop_id: str
     stop_sequence: int
-    arrival: Optional[Time] = None 
+    arrival: Optional[Time] = None
     departure: Optional[Time] = None
     status: Optional[str] = None
 
-    def __init__(self, stop_type: StopType, mbta_stop_id: str, stop_sequence: int, arrival_time: Optional[datetime] = None, departure_time: Optional[datetime] = None, status: Optional[str] = None):
+    def __init__(
+        self,
+        stop_type: StopType,
+        mbta_stop_id: str,
+        stop_sequence: int,
+        arrival_time: Optional[datetime] = None,
+        departure_time: Optional[datetime] = None,
+        status: Optional[str] = None):
         """
         Inits the stop.
 
@@ -60,7 +67,7 @@ class Stop:
         self.stop_type = stop_type
         self.mbta_stop_id = mbta_stop_id
         self.stop_sequence = stop_sequence
-        self.arrival = Time(scheduled_time=arrival_time) if arrival_time else None 
+        self.arrival = Time(scheduled_time=arrival_time) if arrival_time else None
         self.departure = Time(scheduled_time=departure_time) if departure_time else None
         self.status = status
 
@@ -77,7 +84,7 @@ class Stop:
         """Set the MBTAStop and add it to the registry."""
         self.mbta_stop_id = mbta_stop.id  # Update the stop ID
         MBTAStopObjStore.store(mbta_stop)  # Add to store
-        
+
     @property
     def arrival_time(self) -> Optional[datetime]:
         if self.arrival and self.arrival.time:
@@ -113,12 +120,18 @@ class Stop:
         if self.time:
             return self.time.astimezone() - datetime.now().astimezone()
         return None
-    
+
     def __repr__(self) -> str:
         return (f"TripStop({self.stop_type.value}): {self.mbta_stop_id} @ {self.time.replace(tzinfo=None)}"
         )
-        
-    def update_stop(self, mbta_stop_id: str ,stop_sequence: int, arrival_time: Optional[datetime] = None, departure_time: Optional[datetime] = None, status: Optional[str] = None) -> None:
+
+    def update_stop(
+        self,
+        mbta_stop_id: str,
+        stop_sequence: int,
+        arrival_time: Optional[datetime] = None,
+        departure_time: Optional[datetime] = None,
+        status: Optional[str] = None) -> None:
         """
         Updates the stop with new information.
 
@@ -131,7 +144,7 @@ class Stop:
         self.mbta_stop_id = mbta_stop_id
         self.stop_sequence = stop_sequence
         self.status = status
-        
+
         if arrival_time:
             if not self.arrival:
                 self.arrival = Time(scheduled_time=arrival_time)

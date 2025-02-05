@@ -24,8 +24,8 @@ class DeparturesHandler(MBTABaseHandler):
         """Asynchronous factory method to initialize DeparturesHandler."""
 
         instance = await super()._create(
-            mbta_client=mbta_client, 
-            departure_stop_name=departure_stop_name, 
+            mbta_client=mbta_client,
+            departure_stop_name=departure_stop_name,
             max_trips=max_trips,
             logger=logger)
 
@@ -39,7 +39,7 @@ class DeparturesHandler(MBTABaseHandler):
 
             # Initialize trips
             trips: dict[str, Trip] = {}
-            
+
             # roudn to the hour to leverage caching in fetch and processing (based on header hash)
             min_time = f"{datetime.now().strftime("%H")}:00"
 
@@ -52,8 +52,8 @@ class DeparturesHandler(MBTABaseHandler):
 
             # Filter out departed trips'
             filtered_trips = super()._filter_and_sort_trips(
-                trips=updated_trips, 
-                remove_departed=True, 
+                trips=updated_trips,
+                remove_departed=True,
                 require_both_stops=False)
 
             # Update stops for the trip
@@ -63,7 +63,7 @@ class DeparturesHandler(MBTABaseHandler):
             tasks_trips_details = asyncio.create_task(
                 super()._update_details(trips=filtered_trips))
 
-            await task_stops                 
+            await task_stops
             detailed_trips = await tasks_trips_details
 
             # Filter out departed trips again

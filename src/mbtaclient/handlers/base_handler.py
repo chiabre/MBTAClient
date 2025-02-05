@@ -24,7 +24,11 @@ class MBTABaseHandler:
     FILTER_TIME_ARRIVAL_BUFFER = timedelta(seconds=60)
     DEFAULT_MAX_TRIPS = 1
 
-    def __init__( self, mbta_client: MBTAClient, max_trips: Optional[int],logger: Optional[logging.Logger]):
+    def __init__(
+        self,
+        mbta_client: MBTAClient,
+        max_trips: Optional[int],
+        logger: Optional[logging.Logger]):
 
         self._mbta_client = mbta_client
         self._mbta_stops_ids: dict[StopType, list[str]] = {
@@ -33,25 +37,25 @@ class MBTABaseHandler:
         }
         self._max_trips = max_trips
         self._mbta_trip_stops_ids = set()
-        
+
         #self._trips: dict[str, Trip] = {}  # Dictionary to store Trip objects, keyed by trip ID
-        
+
         self._last_processed_scheduling = {
              'data': None,
              'timestamp': None
         }
-        
+
         self._logger = logger or logging.getLogger(__name__)  # Logger instance
-    
+
     @classmethod
     async def _create(
-        cls, 
+        cls,
         mbta_client: MBTAClient,
         departure_stop_name: Optional[str] = None ,
         arrival_stop_name: Optional[str] = None,
         max_trips: Optional[int] = DEFAULT_MAX_TRIPS,
         logger: Optional[logging.Logger] = None)-> "MBTABaseHandler":
-        
+
         instance: MBTABaseHandler = cls(mbta_client=mbta_client, max_trips=max_trips,logger=logger)
         await instance.__update_mbta_stops(departure_stop_name=departure_stop_name,arrival_stop_name=arrival_stop_name)
         return instance
@@ -59,34 +63,41 @@ class MBTABaseHandler:
     @abstractmethod
     async def update(self) -> list[Trip]:
         """Update the trips info."""
-        pass
-    
+
     ### MBTA STOP
-    async def __update_mbta_stops(self, departure_stop_name: str, arrival_stop_name: Optional[str]) -> None:
-        
+    async def __update_mbta_stops(
+        self,
+        departure_stop_name: str,
+        arrival_stop_name: Optional[str]) -> None:
+
         self._logger.debug("Updating MBTA stops")
-    
-        try:                
+
+        try:
             mbta_stops, _ = await self.__fetch_mbta_stops()
             self.__process_mbta_stops(mbta_stops, departure_stop_name,arrival_stop_name)
-            
+
         except Exception as e:
             self._logger.error(f"Error updating MBTA stops: {e}")
             raise
 
-    async def __fetch_mbta_stops(self, params: dict = None) -> Tuple[list[MBTAStop],float]:    
+    async def __fetch_mbta_stops(self, params: dict = None) -> Tuple[list[MBTAStop],float]:
         base_params = {
             'filter[location_type]': '0'
             }
-        
+
         if params is not None:
             base_params.update(params)
-            
+
         mbta_stops, timestamp = await self._mbta_client.fetch_stops(base_params)
         return mbta_stops, timestamp
-    
 
-    def __process_mbta_stops(self, mbta_stops: list[MBTAStop], departure_stop_name: Optional[str], arrival_stop_name: Optional[str]) -> None:
+
+    def __process_mbta_stops(
+        self,
+        mbta_stops: list[MBTAStop],
+        departure_stop_name: Optional[str],
+        arrival_stop_name: Optional[str]) -> None:
+
         for mbta_stop in mbta_stops:
             if departure_stop_name and departure_stop_name.lower() == mbta_stop.name.lower() :
                 MBTAStopObjStore.store(mbta_stop)
@@ -102,10 +113,12 @@ class MBTABaseHandler:
         if arrival_stop_name and len(self._mbta_stops_ids[StopType.ARRIVAL]) == 0:
             self._logger.error(f"Invalid arrival stop name, no MBTA stop name matching {arrival_stop_name} ")
             raise MBTAStopError(f"Invalid arrival stop name, no MBTA stop name matching {arrival_stop_name}")
-        
-        
+
     ### SCHEDULING
-    async def _update_scheduling(self, trips: dict[str, Trip], params: Optional[dict] = None) -> dict[str, Trip] :
+    async def _update_scheduling(
+        self,
+        trips: dict[str, Trip],
+        params: Optional[dict] = None) -> dict[str, Trip] :
 
         self._logger.debug("Updating scheduling")
 
@@ -128,7 +141,7 @@ class MBTABaseHandler:
                 trips = await self.__process_scheduling(schedulings=mbta_schedules,trips=trips)
                 self._last_processed_scheduling['data'] = trips
                 self._last_processed_scheduling['timestamp'] = timestamp
-            else:    
+            else:
                 self._logger.debug("MBTA Schedules data are up-to-date. Skipping processing.")
                 trips = self._last_processed_scheduling['data']
 
@@ -142,7 +155,9 @@ class MBTABaseHandler:
             self._logger.error(f"Error updating scheduling: {e}")
             raise
 
-    async def __fetch_schedules(self, params: Optional[dict] = None) -> Tuple[list[MBTASchedule],float]:
+    async def __fetch_schedules(
+        self,
+        params: Optional[dict] = None) -> Tuple[list[MBTASchedule],float]:
 
         base_params = {
             'filter[stop]': ','.join(
@@ -157,9 +172,11 @@ class MBTABaseHandler:
 
         mbta_schedules, timestamp = await self._mbta_client.fetch_schedules(base_params)
         return mbta_schedules, timestamp
-    
-    
-    async def __fetch_predictions(self, params: Optional[dict] = None) -> Tuple[list[MBTAPrediction],float]:     
+
+    async def __fetch_predictions(
+        self,
+        params: Optional[dict] = None) -> Tuple[list[MBTAPrediction],float]:
+
         base_params = {
             'filter[stop]': ','.join(
                 self._mbta_stops_ids.get(StopType.DEPARTURE, []) +
@@ -168,21 +185,20 @@ class MBTABaseHandler:
             'filter[revenue]': 'REVENUE',
             'sort': 'departure_time'
         }
-        
+
         if params is not None:
-            base_params.update(params)     
-                  
+            base_params.update(params)
+
         mbta_predictions, timestamp = await self._mbta_client.fetch_predictions(base_params)
         return mbta_predictions, timestamp
-    
-        
+
     async def __process_scheduling(self, schedulings: Union[list[MBTASchedule],list[MBTAPrediction]], trips: dict[str, Trip] = None ) -> dict[str, Trip] :
         self._logger.debug("Processing scheduling")
-        
+
         try:
-            
+
             for scheduling in schedulings:
-                
+
                 # if schedulings is a prediciton and ScheduleRelationship == specific cases
                 if isinstance(scheduling, MBTAPrediction) and scheduling.schedule_relationship in [MBTAScheduleRelationship.CANCELLED.value, MBTAScheduleRelationship.SKIPPED.value, MBTAScheduleRelationship.NO_DATA.value]:
                     # if the scheduling stop is already in the trips
@@ -201,20 +217,20 @@ class MBTABaseHandler:
                     trip = trips[scheduling.trip_id]
                     
                 #Set the mbta_route for the trip, 
-                if not trip._mbta_route and scheduling.route_id:
+                if not trip.mbta_route and scheduling.route_id:
                     # if the route in the objStore
                     if MBTARouteObjStore.get_by_id(scheduling.route_id):
                         # set the route id for the trip
-                        trip._mbta_route_id = scheduling.route_id
+                        trip.mbta_route.id = scheduling.route_id
                     else:
                         # fetch the route
                         mbta_route, _ = await self._mbta_client.fetch_route(scheduling.route_id)
                         # set the route for the trip (it will set the route id and store the obj in the objstore)
-                        trip._mbta_route = mbta_route
+                        trip.mbta_route = mbta_route
                 
                 # if route type 0 or 1 and MBTASchedule skipp
                 #https://www.mbta.com/developers/v3-api/best-practices#predictions
-                if trip._mbta_route.type in [0,1] and isinstance(scheduling, MBTASchedule):
+                if trip.mbta_route.type in [0,1] and isinstance(scheduling, MBTASchedule):
                     #Unfortunately in some corner cases there may be more trips type for the same trip...cannot break
                     continue
                     
@@ -222,20 +238,16 @@ class MBTABaseHandler:
                 if scheduling.stop_id in self._mbta_stops_ids[StopType.DEPARTURE]:
                     #add/update the stop as departure
                     trip.add_stop(
-                        stop_type=StopType.DEPARTURE, 
-                        scheduling=scheduling, 
+                        stop_type=StopType.DEPARTURE,
+                        scheduling=scheduling,
                         mbta_stop_id=scheduling.stop_id)
                 #Check if the prediction stop_id is in the arrival stops lists
                 elif scheduling.stop_id in self._mbta_stops_ids[StopType.ARRIVAL]:
                     #add/update the stop as arrival
                     trip.add_stop(
-                        stop_type=StopType.ARRIVAL, 
-                        scheduling=scheduling, 
+                        stop_type=StopType.ARRIVAL,
+                        scheduling=scheduling,
                         mbta_stop_id=scheduling.stop_id)
-                
-                ##Status from prediction
-                if isinstance(scheduling, MBTAPrediction) and scheduling.status:
-                    trip._mbta_prediction_status = scheduling.status
                     
                 trips[scheduling.trip_id] = trip
                     
@@ -273,20 +285,20 @@ class MBTABaseHandler:
             mbta_alerts, _ = await task_alerts
 
             for trip_id, trip in trips.items():
-                # Assign the trip ID if not already set
-                if not trip._mbta_trip_id:
-                    trip._mbta_trip_id = trip_id
+                # # Assign the trip ID if not already set
+                # if not trip.mbta_trip and not trip.mbta_trip.id:
+                #     trip.mbta_trip.id = trip_id
 
                 # Fetch and assign the MBTA trip if not already set
-                if not trip._mbta_trip:
+                if not trip.mbta_trip:
                     mbta_trip, _ = await self._mbta_client.fetch_trip(id=trip_id)
-                    trip._mbta_trip = mbta_trip
+                    trip.mbta_trip = mbta_trip
 
                 # Match vehicle for the trip
                 matching_vehicles = [vehicle for vehicle in mbta_vehicles if vehicle.trip_id == trip_id]
 
                 # Assign the vehicle to the trip if exist
-                trip._mbta_vehicle = matching_vehicles[0] if len(matching_vehicles) > 0 else None
+                trip.mbta_vehicle = matching_vehicles[0] if len(matching_vehicles) > 0 else None
 
                 # Filter and sort relevant alerts
                 processed_alerts = []
@@ -297,7 +309,7 @@ class MBTABaseHandler:
                 # Sort processed_alerts by severity (high to low)
                 processed_alerts.sort(key=lambda mbta_alert: mbta_alert.severity, reverse=True)
 
-                trip._mbta_alerts = processed_alerts
+                trip.mbta_alerts = processed_alerts
 
                 # Add the updated trip to the results
                 updated_trips[trip_id] = trip
@@ -362,13 +374,13 @@ class MBTABaseHandler:
                     bool: True if the entity matches the route-level alert criteria, otherwise False.
                 """
                 return (
-                    informed_entity.route_id == trip._mbta_route.id and
+                    informed_entity.route_id == trip.mbta_route.id and
                     not informed_entity.stop_id and
                     not informed_entity.trip_id and
-                    (not informed_entity.direction_id or informed_entity.direction_id == trip._mbta_trip.direction_id)
+                    (not informed_entity.direction_id or informed_entity.direction_id == trip.mbta_trip.direction_id)
                 )
             
-            trip_id = trip._mbta_trip.id if trip._mbta_trip else None
+            trip_id = trip.mbta_trip.id if trip.mbta_trip else None
             departure_stop_id = trip.get_stop_id_by_stop_type(StopType.DEPARTURE)
             arrival_stop_id = trip.get_stop_id_by_stop_type(StopType.ARRIVAL)
 
@@ -455,7 +467,7 @@ class MBTABaseHandler:
                     continue
 
                 # If vehicle data is available, use it for filtering
-                if trip._mbta_vehicle:
+                if trip.mbta_vehicle:
 
                     if remove_departed and departure_stop and trip.has_departed:
                         continue  # If the vehicle has passed the departure stop, filter it out
@@ -503,7 +515,7 @@ class MBTABaseHandler:
         
         for trip in trips:
             params = {
-                    'filter[route]': trip._mbta_route.id,
+                    'filter[route]': trip.mbta_route.id,
                     'include' : 'child_stops'
             }
             mbta_stops, _ = await self._mbta_client.fetch_stops(params=params)
