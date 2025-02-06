@@ -14,10 +14,10 @@ class TripsHandler(MBTABaseHandler):
     """Handler for managing Trips."""
 
     DEFAULT_MAX_TRIPS =  5
-    
+
     @classmethod
     async def create(
-        cls, 
+        cls,
         departure_stop_name: str ,
         mbta_client: MBTAClient,
         arrival_stop_name: str,
@@ -29,7 +29,7 @@ class TripsHandler(MBTABaseHandler):
         instance = await super()._create(
             departure_stop_name=departure_stop_name,
             mbta_client=mbta_client,
-            arrival_stop_name=arrival_stop_name, 
+            arrival_stop_name=arrival_stop_name,
             max_trips=max_trips,
             logger=logger)
 
@@ -51,7 +51,7 @@ class TripsHandler(MBTABaseHandler):
             params = {
                 'filter[min_time]': min_time
             }
-            
+
             # Update trip scheduling
             updated_trips = await super()._update_scheduling(trips=trips,params=params)
 
@@ -60,13 +60,13 @@ class TripsHandler(MBTABaseHandler):
                 trips=updated_trips,
                 remove_departed=True,
                 sort_by=self._sort_by)
-            
+
             # Update stops for the trip
             task_stops = asyncio.create_task(super()._update_mbta_stops_for_trips(trips=filtered_trips.values()))
             # Update trip details
             tasks_trips_details = asyncio.create_task(super()._update_details(trips=filtered_trips))
-    
-            await task_stops                             
+
+            await task_stops
             detailed_trips = await tasks_trips_details
 
             # Filter out departed trips again
