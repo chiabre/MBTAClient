@@ -11,7 +11,7 @@ from ..mbta_object_store import MBTARouteObjStore, MBTAStopObjStore
 from ..client.mbta_client import MBTAClient
 
 from ..trip import Trip
-from ..stop import StopType
+from ..stop import Stop, StopType
 
 from ..models.mbta_stop import MBTAStop
 from ..models.mbta_schedule import MBTASchedule
@@ -20,9 +20,9 @@ from ..models.mbta_alert import MBTAAlert, MBTAAlertPassengerActivity, MBTAAlert
 
 class MBTABaseHandler:
 
-    FILTER_TIME_DEPARTURE_BUFFER = timedelta(seconds=90)
-    FILTER_TIME_ARRIVAL_BUFFER = timedelta(seconds=60)
     DEFAULT_MAX_TRIPS = 1
+    
+    FILTER_BUFFER_THRESHOLD = 20 # seconds
 
     def __init__(
         self,
@@ -394,11 +394,11 @@ class MBTABaseHandler:
                         or informed_entity.trip_id == trip_id
                         or (
                             informed_entity.stop_id == departure_stop_id
-                            and MBTAAlertPassengerActivity.BOARD in informed_entity.activities
+                            and MBTAAlertPassengerActivity.BOARD.value in informed_entity.activities
                         )
                         or (
                             informed_entity.stop_id == arrival_stop_id
-                            and MBTAAlertPassengerActivity.EXIT in informed_entity.activities
+                            and MBTAAlertPassengerActivity.EXIT.value in informed_entity.activities
                         )
                     ) and (
                         (
@@ -455,37 +455,44 @@ class MBTABaseHandler:
             trips = self._sort_trips(trips, sort_by)
 
             for trip_id, trip in trips.items():
-                departure_stop = trip.get_stop_by_type(StopType.DEPARTURE)
-                arrival_stop = trip.get_stop_by_type(StopType.ARRIVAL)
+                departure_stop: Optional[Stop] = trip.get_stop_by_type(StopType.DEPARTURE)
+                arrival_stop: Optional[Stop] = trip.get_stop_by_type(StopType.ARRIVAL)
 
-                # Ensure both departure and arrival stops exist and are in the correct sequence
+                # If both stops required ensure both departure and arrival stops exist and are in the correct sequence
                 if require_both_stops and (
-                    not departure_stop or not arrival_stop or departure_stop.stop_sequence > arrival_stop.stop_sequence
+                    not departure_stop
+                    or not arrival_stop
+                    or departure_stop.stop_sequence > arrival_stop.stop_sequence
                 ):
                     continue
                 else:
-                    # if sequence cannot be used, check that a DEPARTURE stop has departure Time obj (is not the last stop of a trip) and ARRIVAL stop has arrival Time obj (is not the first stop of a tirp)
+                    # elsecheck that a DEPARTURE stop has departure Time obj (is not the last stop of a trip) and ARRIVAL stop has arrival Time obj (is not the first stop of a tirp)
                     if departure_stop and not departure_stop.departure:
                         continue
                     if arrival_stop and not arrival_stop.arrival:
                         continue
 
-                # Remove trips that have already departed (+BUFFER time)
-                if remove_departed and departure_stop.departure_time and departure_stop.departure_time < now - self.FILTER_TIME_DEPARTURE_BUFFER:
-                    continue
+                now = datetime.now().astimezone()       
 
-                # Remove trips that have already arrived (+BUFFER time)
-                if arrival_stop and arrival_stop.arrival_time and arrival_stop.arrival_time < now - self.FILTER_TIME_ARRIVAL_BUFFER:
-                    continue
-
-                # If vehicle data is available, use it for filtering
-                if trip.mbta_vehicle:
-
-                    if remove_departed and departure_stop and trip.has_departed:
-                        continue  # If the vehicle has passed the departure stop, filter it out
-
-                    if arrival_stop and trip.has_arrived:
-                        continue  # If the vehicle has passed the arrival stop, filter it out
+                # Remove trips that have already departed + REMOVAL_BUFFER_THRESHOLD
+                if remove_departed and departure_stop:
+                    
+                    departure_time = departure_stop.departure_time or departure_stop.time
+                    departure_delta = departure_time.astimezone() - now
+                    seconds_to_departure = int(departure_delta.total_seconds())
+                    
+                    if trip.has_departed(departure_stop, seconds_to_departure=seconds_to_departure, filter_threshold=self.FILTER_BUFFER_THRESHOLD):
+                        continue
+                
+                # Remove trips that have already arrived + REMOVAL_BUFFER_THRESHOLD
+                if arrival_stop:
+                   
+                    arrival_time = arrival_stop.arrival_time or arrival_stop.time
+                    arrival_delta = arrival_time.astimezone() - now
+                    seconds_to_arrival = int(arrival_delta.total_seconds())
+                
+                    if trip.has_arrived(arrival_stop,seconds_to_arrival=seconds_to_arrival,filter_threshold=self.FILTER_BUFFER_THRESHOLD):
+                        continue
 
                 # Add the valid trip to the processed trips
                 filtered_trips[trip_id] = trip

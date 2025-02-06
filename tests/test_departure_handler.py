@@ -1,3 +1,4 @@
+from datetime import datetime
 from inspect import isdatadescriptor
 import pytest
 from dotenv import load_dotenv
@@ -45,7 +46,7 @@ async def test_handler(stop_name, route_type):
         print(f"Testing TimetableHandler for stop: {stop_name} ({route_type})")
         
         # Configure the handler for the given stop
-        max_trips = 2  # Limit the number of trips to process
+        max_trips = 1  # Limit the number of trips to process
         handler: DeparturesHandler = await DeparturesHandler.create(
             departure_stop_name=stop_name,
             mbta_client=mbta_client,
@@ -80,5 +81,21 @@ async def test_handler(stop_name, route_type):
             # Print trip details for debugging
             properties = [attr for attr in dir(Trip) if isdatadescriptor(getattr(Trip, attr))]
             for property_name in properties:
-                print(f"trip.{property_name}: {getattr(trip, property_name)}")  
+                print(f"trip.{property_name}: {getattr(trip, property_name)}")
+                               
+            now = datetime.now().astimezone()
+
+            # Calculate time deltas
+            arrival_time = trip._departure_stop.arrival_time or trip._departure_stop.time
+            departure_time = trip._departure_stop.departure_time or trip._departure_stop.time
+
+            arrival_delta = arrival_time.astimezone() - now
+            departure_delta = departure_time.astimezone() - now
+
+            seconds_arrival = int(arrival_delta.total_seconds())
+            seconds_departure = int(departure_delta.total_seconds())
+            
+            print(f"seconds_arrival: {seconds_arrival}")
+            print(f"seconds_departure: {seconds_departure}")
+         
             print("##############") 
