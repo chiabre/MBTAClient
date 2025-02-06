@@ -282,9 +282,8 @@ class Trip:
         if self.mbta_alerts:
             for mbta_alert in self.mbta_alerts:
                 effect = " ".join(mbta_alert.effect.split("_"))
-                lifecycle = mbta_alert.lifecycle
                 short_header = mbta_alert.short_header
-                alerts_details.add(effect + "[" + lifecycle + "]: " + short_header)
+                alerts_details.add(effect + ": " + short_header)
             return alerts_details
         return None
 

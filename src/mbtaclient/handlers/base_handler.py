@@ -394,11 +394,11 @@ class MBTABaseHandler:
                         or informed_entity.trip_id == trip_id
                         or (
                             informed_entity.stop_id == departure_stop_id
-                            and MBTAAlertPassengerActivity.BOARD in informed_entity.activities
+                            and MBTAAlertPassengerActivity.BOARD.value in informed_entity.activities
                         )
                         or (
                             informed_entity.stop_id == arrival_stop_id
-                            and MBTAAlertPassengerActivity.EXIT in informed_entity.activities
+                            and MBTAAlertPassengerActivity.EXIT.value in informed_entity.activities
                         )
                     ) and (
                         (
