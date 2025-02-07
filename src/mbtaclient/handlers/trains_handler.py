@@ -20,7 +20,7 @@ class TrainsHandler(MBTABaseHandler):
         mbta_client: MBTAClient,
         departure_stop_name: str ,
         arrival_stop_name: str,
-        trips_name: str,
+        trip_name: str,
         max_trips: Optional[int] = DEFAULT_MAX_TRIPS,
         logger: Optional[logging.Logger] = None)-> "TrainsHandler":
 
@@ -34,22 +34,22 @@ class TrainsHandler(MBTABaseHandler):
         
         instance._logger = logger or logging.getLogger(__name__)  # Logger instance
 
-        await instance.__update_mbta_trips_by_trip_name(trips_name)
+        await instance.__update_mbta_trips_by_trip_name(trip_name)
 
         return instance
 
-    async def __update_mbta_trips_by_trip_name(self, trips_name: str) -> None:
+    async def __update_mbta_trips_by_trip_name(self, trip_name: str) -> None:
         self._logger.debug("Updating MBTA trips")
         try:
-            mbta_trips, _ = await self.__fetch_trips_by_name(trips_name)
+            mbta_trips, _ = await self.__fetch_trips_by_name(trip_name)
             if mbta_trips:
                 for mbta_trip in mbta_trips:
                     if not MBTATripObjStore.get_by_id(mbta_trip.id):
                         MBTATripObjStore.store(mbta_trip)
                     self._mbta_trips_id = mbta_trip.id
             else:
-                self._logger.error(f"Invalid MBTA trip name {trips_name}")
-                raise MBTATripError(f"Invalid MBTA trip name {trips_name}")
+                self._logger.error(f"Invalid MBTA trip name {trip_name}")
+                raise MBTATripError(f"Invalid MBTA trip name {trip_name}")
   
         except Exception as e:
             self._logger.error(f"Error updating MBTA trips: {e}")
