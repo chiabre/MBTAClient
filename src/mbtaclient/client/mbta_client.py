@@ -1,6 +1,6 @@
-import aiohttp
-import logging
 from typing import Optional, Any, Dict, Tuple
+import logging
+import aiohttp
 
 from ..models.mbta_vehicle import MBTAVehicle
 from ..models.mbta_route import MBTARoute
@@ -25,28 +25,27 @@ ENDPOINTS = {
 }
 
 
-
 class MBTAClient:
     """Class to interact with the MBTA v3 API."""
-    
-    def __init__(self, 
+
+    def __init__(self,
                  api_key: Optional[str] = None,
-                 session: Optional[aiohttp.ClientSession] = None, 
-                 cache_manager: Optional[MBTACacheManager] = None, 
-                 logger: Optional[logging.Logger] = None, 
+                 session: Optional[aiohttp.ClientSession] = None,
+                 cache_manager: Optional[MBTACacheManager] = None,
+                 logger: Optional[logging.Logger] = None,
                  max_concurrent_requests: Optional[int] = None,
                  timeout: Optional[int] = None):
         self._api_key = api_key
 
         self._logger = logger or logging.getLogger(__name__)
-        
+
         MBTASessionManager.configure(
             session=session,
             logger=logger,
             max_concurrent_requests=max_concurrent_requests,
             timeout=timeout,
         )
-        
+
         if cache_manager is None:
             self._cache_manager = MBTACacheManager()
             self._own_cache = True
@@ -67,7 +66,7 @@ class MBTAClient:
 
     async def __aexit__(self, exc_type, exc, tb):
         """Exit the context and clean up."""
-        if self._own_cache == True:
+        if self._own_cache is True:
             self._cache_manager.cleanup()
         await MBTASessionManager.cleanup()
 
@@ -93,7 +92,7 @@ class MBTAClient:
             self._logger.error("Unexpected error: %s", error)
             raise
 
-    async def request(self, method: str, path: str, params: Optional[Dict[str, Any]] = None) -> Tuple[Any,float]:
+    async def request(self, method: str, path: str, params: Optional[Dict[str, Any]] = None) -> Tuple[Any, float]:
         """Make an HTTP request with optional query parameters."""
         session = await MBTASessionManager.get_session()
         params = params or {}
@@ -112,12 +111,16 @@ class MBTAClient:
         try:
             async with MBTASessionManager.semaphore:
                 
-                self._logger.debug(f"{method} {url} {headers} {params}")                
+                self._logger.debug("Request: {method} {url} {headers} {params}")
+                
                 response: aiohttp.ClientResponse = await session.request(
-                    method, url, 
+                    method, url,
                     params=params, 
                     headers=headers
                 )
+
+                # Log the response status
+                self._logger.debug(f"Response status: {response.status}")
 
                 if response.status == 403:
                     self._logger.error("Authentication error: Invalid API key (HTTP 403).")
@@ -125,12 +128,13 @@ class MBTAClient:
                 
                 if response.status == 429:
                     self._logger.error("Rate limit exceeded (HTTP 429).")
-                    raise MBTATooManyRequestsError("Rate limit exceeded (HTTP 429). Please uscheck your API key.")
+                    raise MBTATooManyRequestsError("Rate limit exceeded (HTTP 429). Please check your API key.")
 
                 if response.status == 304:
                     if cached_data is not None:
-                        if  self._cache_manager.stats:
+                        if self._cache_manager.stats:
                             self._cache_manager.cache_stats.increase_counter(CacheEvent.HIT)
+                        self._logger.debug("Cache hit: %s", url)
                         return cached_data, timestamp
                     else:
                         raise MBTAClientError(f"Cache empty for 304 response: {url}")
@@ -141,17 +145,20 @@ class MBTAClient:
                 last_modified = response.headers.get("Last-Modified")
                 if last_modified:
                     timestamp = self._cache_manager.update_cache(path=path, params=params, data=data, last_modified=last_modified)
-                if  self._cache_manager.stats:
+                
+                if self._cache_manager.stats:
                     self._cache_manager.cache_stats.increase_counter(CacheEvent.MISS)
+
                 return data, timestamp
 
         except TimeoutError as error:
-            self._logger.error(f"Timeout during request to {url}: {error}")
-            raise TimeoutError
+            self._logger.error("Timeout during request to %s: %s", url, error)
+            raise TimeoutError from error
         
         except Exception as error:
-            self._logger.error(f"Error during request to {url}: {error}")
+            self._logger.error("Timeout during request to %s: %s", url, error)
             raise MBTAClientError("Unexpected error during request.") from error
+
 
     async def fetch_route(self, id: str, params: Optional[Dict[str, Any]] = None) -> Tuple[MBTARoute, float]:
         """Fetch a MBTARoute by its ID."""
