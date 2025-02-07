@@ -22,7 +22,7 @@ class MBTABaseHandler:
 
     DEFAULT_MAX_TRIPS = 1
     
-    FILTER_BUFFER_THRESHOLD = 20 # seconds
+    FILTER_GRACE_PERIOD = 20 # seconds
 
     def __init__(
         self,
@@ -292,12 +292,14 @@ class MBTABaseHandler:
                 if not trip.mbta_trip:
                     mbta_trip, _ = await self._mbta_client.fetch_trip(id=trip_id)
                     trip.mbta_trip = mbta_trip
+    
+                # If the the trip is day1+ do not add vehicle info
+                if trip.departure_time.date() == datetime.now().date():
 
-                # Match vehicle for the trip
-                matching_vehicles = [vehicle for vehicle in mbta_vehicles if vehicle.trip_id == trip_id]
-
-                # Assign the vehicle to the trip if exist
-                trip.mbta_vehicle = matching_vehicles[0] if len(matching_vehicles) > 0 else None
+                    # Match vehicle for the trip
+                    matching_vehicles = [vehicle for vehicle in mbta_vehicles if vehicle.trip_id == trip_id]
+                    # Assign the vehicle to the trip if exist
+                    trip.mbta_vehicle = matching_vehicles[0] if len(matching_vehicles) > 0 else None
 
                 # Filter and sort relevant alerts
                 processed_alerts = []
@@ -481,7 +483,7 @@ class MBTABaseHandler:
                     departure_delta = departure_time.astimezone() - now
                     seconds_to_departure = int(departure_delta.total_seconds())
                     
-                    if trip.has_departed(departure_stop, seconds_to_departure=seconds_to_departure, filter_threshold=self.FILTER_BUFFER_THRESHOLD):
+                    if trip.has_departed(departure_stop, seconds_to_departure=seconds_to_departure, filtering_grace_period=self.FILTER_GRACE_PERIOD):
                         continue
                 
                 # Remove trips that have already arrived + REMOVAL_BUFFER_THRESHOLD
@@ -491,7 +493,7 @@ class MBTABaseHandler:
                     arrival_delta = arrival_time.astimezone() - now
                     seconds_to_arrival = int(arrival_delta.total_seconds())
                 
-                    if trip.has_arrived(arrival_stop,seconds_to_arrival=seconds_to_arrival,filter_threshold=self.FILTER_BUFFER_THRESHOLD):
+                    if trip.has_arrived(arrival_stop,seconds_to_arrival=seconds_to_arrival,filtering_grace_period=self.FILTER_GRACE_PERIOD):
                         continue
 
                 # Add the valid trip to the processed trips
