@@ -75,21 +75,30 @@ class MBTAClient:
     ) -> Dict[str, Any]:
         """Helper method to fetch data from the MBTA API."""
         try:
+            # Make the API request
             data, timestamp = await self.request("GET", path, params)
+
+            # Check if the 'data' key exists in the response
             if "data" not in data:
-                self._logger.warning(f"Response missing 'data': {data}")
-                raise MBTAClientError("Invalid response from API.")
+                self._logger.warning("Response missing 'data' in response: %s", data)
+                raise MBTAClientError("Invalid response from API: 'data' key missing.")
+            
             return data, timestamp
         
         except MBTAClientError as error:
+            # Log specific MBTAClientError details
             self._logger.error(
-                "MBTAClientError: %s (HTTP %s - %s) | URL: %s",
-                error.message, error.status_code, error.reason, error.url
+                "MBTAClientError: %s (HTTP %s - %s) | URL: %s", 
+                error.message, 
+                error.status_code, 
+                error.reason, 
+                error.url
             )
             raise
 
         except Exception as error:
-            self._logger.error("Unexpected error: %s", error)
+            # Log unexpected errors with traceback
+            self._logger.error("Unexpected error: %s", error, exc_info=True)
             raise
 
     async def request(self, method: str, path: str, params: Optional[Dict[str, Any]] = None) -> Tuple[Any, float]:
@@ -267,5 +276,6 @@ class MBTAClientError(Exception):
         if url:
             details.append(f"URL: {url}")
 
-        full_message = f"{message} ({', '.join(details)})" if details else message
-        super().__init__(full_message)  # Pass only the message to the base Exception class
+        # Save the full message in the `message` attribute
+        self.message = f"{message} ({', '.join(details)})" if details else message
+        super().__init__(self.message)  # Pass the full message to the base Exception class
