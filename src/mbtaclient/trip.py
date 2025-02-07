@@ -23,13 +23,10 @@ class Trip:
     _mbta_alerts_ids: set[Optional[str]] = field(default_factory=set)
     stops: list[Optional['Stop']] = field(default_factory=list)
 
-    VEHICLE_DATA_FRESHNESS_DATA_THRESHOLD = 90  # second, treshold to consider vehichle data "usabale" for countdown
-    VEHICLE_DATA_LIVE_DATA_THRESHOLD = 10  # seconds, treshold to consider vehichle data live and ovverride departure/arrival time for countdown
-
-    VEHICLE_DATA_BUFFER_TIME = 60 # seconds, how much buffer time to add to departure/arrival time when vehicle data are fresh 
-    NO_VEHICLE_DATA_BUFFER_TIME = 10 # seconds, how much buffer time to add to departure/arrival time when vehicle data are not fresh
-
-    COUNTDOWN_TRESHOLD = 30 # seconds, minimum time for boarding/arriving minimum time (eg countodwn = boarding for COUNTDOW_TRESHOLD sec before departure time)
+    VEHICLE_DATA_FRESHNESS_DATA_THRESHOLD = 60  # second, treshold to consider vehichle data fresh
+    VEHICLE_DATA_LIVENESS_DATA_THRESHOLD = 20  # seconds, treshold to consider vehichle data live and ovverride departure/arrival time for countdown
+    VEHICLE_DATA_BUFFER_TIME = 90 # seconds, how much buffer time to add to departure/arrival time when vehicle data
+    STOP_COUNTDOWN_THRESHOLD = 30 # seconds, minimum time for boarding/arriving (eg countodwn = boarding is true while COUNTDOW_TRESHOLD sec > sec to departure time)
 
     # registry
     @property
@@ -184,7 +181,7 @@ class Trip:
         if self.mbta_vehicle and self.mbta_vehicle.updated_at:
             now =  datetime.now().astimezone() # Ensure consistent timezone handling
             delta = (now - self.mbta_vehicle.updated_at).total_seconds()
-            return delta <= self.VEHICLE_DATA_LIVE_DATA_THRESHOLD
+            return delta <= self.VEHICLE_DATA_LIVENESS_DATA_THRESHOLD
         return False
     
     #departure stop
@@ -356,10 +353,10 @@ class Trip:
         if self.has_departed(stop=stop,seconds_to_departure=seconds_to_departure):
             return "Departed"
 
-        if self.is_boarding(stop=stop, seconds_to_departure=seconds_to_departure):
+        if self.is_boarding(stop=stop, seconds_to_arrival=seconds_to_arrival, seconds_to_departure=seconds_to_departure):
             return "Boarding"
 
-        if stop.arrival_time and self.is_arriving(stop=stop, seconds_to_departure=seconds_to_departure, seconds_to_arrival=seconds_to_arrival):
+        if stop.arrival_time and self.is_arriving(stop=stop, seconds_to_arrival=seconds_to_arrival, seconds_to_departure=seconds_to_departure):
             return "Arriving"
 
         # Default to formatted time countdown
@@ -383,9 +380,11 @@ class Trip:
 
             if seconds < 0:
                 return None
-                return "BRD"
 
-            if seconds <= 30:
+            if seconds <= self.VEHICLE_DATA_BUFFER_TIME and self.mbta_vehicle and self.mbta_vehicle.current_stop_sequence == stop.stop_sequence and  self.mbta_vehicle.current_status == "STOPPED_AT":
+                return "BRD"
+            
+            if seconds <= self.STOP_COUNTDOWN_THRESHOLD:
                 return "ARR"
 
             if seconds <= 60:
@@ -415,129 +414,83 @@ class Trip:
         if minutes > 1:
             return f"{minutes} min"
         return "1 min"
-
-    def has_departed(self, stop: Stop, seconds_to_departure: int, filter_threshold: Optional[int] = 0) -> bool:
+    
+    def has_departed(self, stop: Stop, seconds_to_departure: int, filtering_grace_period: Optional[int] = 0) -> bool:
         """
         Determines whether the transit has departed a given stop.
-
-        Args:
-            stop (Stop): The target stop.
-            seconds_to_departure (int): Time in seconds until departure.
-            filter_threshold (Optional[int]): Extra buffer time (used for filtering logic).
-
-        Returns:
-            bool: True if the transit has departed the stop, False otherwise.
         """
-
-        # If fresh vehicle data is available
-        if self.mbta_vehicle and self.is_vehicle_data_fresh:
+        #if vehicle data (for this use case we don't need to check freshness...)
+        if self.mbta_vehicle:
             vehicle_stop = self.mbta_vehicle.current_stop_sequence
-
-            # Ensure vehicle_stop is valid
-            if vehicle_stop is not None:
-                # If the vehicle's current stop sequence is beyond the target stop, it has passed
-                if vehicle_stop > stop.stop_sequence:
-                    # Apply buffer threshold logic if provided
-                    if filter_threshold:
-                        return (seconds_to_departure + self.NO_VEHICLE_DATA_BUFFER_TIME + filter_threshold) <= 0
-
-                    # If no removal buffer threshold is provided, consider it departed
-                    return True
-
+            # if the vehicle stop is after the departure stop 
+            if vehicle_stop and vehicle_stop > stop.stop_sequence: 
+                # if filtering grace period
+                if filtering_grace_period > 0:
+                    return seconds_to_departure + filtering_grace_period < 0
+                return True
+            
         # If no fresh vehicle data, determine departure based on time threshold
-        return (seconds_to_departure + self.NO_VEHICLE_DATA_BUFFER_TIME + filter_threshold) <= 0
+        return seconds_to_departure + filtering_grace_period < 0
 
 
-    def has_arrived(self, stop: Stop, seconds_to_arrival: int, filter_threshold: Optional[int] = 0) -> bool:
+    def has_arrived(self, stop: Stop, seconds_to_arrival: int, filtering_grace_period: Optional[int] = 0) -> bool:
         """
         Determines whether the transit has arrived at a given stop.
-
-        Args:
-            stop (Stop): The target stop.
-            seconds_to_arrival (int): Time in seconds until arrival.
-            filter_threshold (Optional[int]): Extra buffer time (used for filtering logic).
-
-        Returns:
-            bool: True if the transit has arrived at the stop, False otherwise.
         """
 
-        # If fresh vehicle data is available
-        if self.mbta_vehicle and self.is_vehicle_data_fresh:
+        #if vehicle data (for this use case we don't need to check freshness...)
+        if self.mbta_vehicle:
             vehicle_stop = self.mbta_vehicle.current_stop_sequence
+            # if the vehicle is at or after the arrival stop
+            if vehicle_stop and vehicle_stop >= stop.stop_sequence:
 
-            # Ensure vehicle_stop is valid
-            if vehicle_stop is not None:
-                # If the vehicle has reached or passed the stop, it has arrived
-                if vehicle_stop >= stop.stop_sequence:
-                    # Apply buffer threshold logic if provided
-                    if filter_threshold:
-                        return (seconds_to_arrival + self.NO_VEHICLE_DATA_BUFFER_TIME + filter_threshold) <= 0
-
-                    # If no buffer threshold is provided, consider it arrived
-                    return True
-
+                if filtering_grace_period > 0:
+                    return seconds_to_arrival + filtering_grace_period <= 0
+                return True
+            
         # If no fresh vehicle data, determine arrival based on time threshold
-        return (seconds_to_arrival + self.NO_VEHICLE_DATA_BUFFER_TIME + filter_threshold) <= 0
+        return seconds_to_arrival + filtering_grace_period <= 0
 
 
-    def is_boarding(self, stop: Stop, seconds_to_departure: int) -> bool:
+    def is_boarding(self, stop: Stop, seconds_to_arrival: int, seconds_to_departure: int) -> bool:
         """
         Determines whether the transit is currently boarding at a given stop.
-
-        Args:
-            stop (Stop): The target stop.
-            seconds_to_departure (int): Time in seconds until departure.
-
-        Returns:
-            bool: True if the transit is boarding, False otherwise.
         """
-
-        # If fresh vehicle data is available
-        if self.mbta_vehicle and self.is_vehicle_data_fresh:
+        # If live vehicle data is available
+        if self.mbta_vehicle:
             vehicle_stop = self.mbta_vehicle.current_stop_sequence
             vehicle_status = self.mbta_vehicle.current_status
 
-            # If vehicle is at the stop and stopped
-            if vehicle_stop == stop.stop_sequence and vehicle_status == "STOPPED_AT":
-                # Live vehicle data confirms boarding
-                if self.is_vehicle_data_live:
+            # Case 1: Fresh vehicle data, within the departure buffer
+            if self.is_vehicle_data_fresh:
+                if vehicle_stop == stop.stop_sequence and vehicle_status == "STOPPED_AT" and 0 <= seconds_to_departure <= self.VEHICLE_DATA_BUFFER_TIME:
                     return True
 
-                # Boarding if within the allowed buffer time
-                if seconds_to_departure + self.VEHICLE_DATA_BUFFER_TIME >= 0:
+            # Case 2: Live vehicle data
+            if self.is_vehicle_data_live:
+                if vehicle_stop == stop.stop_sequence and vehicle_status == "STOPPED_AT":
                     return True
+                else:
+                    return False  # Explicitly return False when conditions are not met
 
-        # If no fresh vehicle data, determine boarding based on time range
-        return 0 <= seconds_to_departure <= self.COUNTDOWN_TRESHOLD
+        # If no vehicle data, rely strictly on schedule-based conditions
+        return (seconds_to_arrival < 0 < seconds_to_departure) or (0 <= seconds_to_departure <= self.STOP_COUNTDOWN_THRESHOLD)
 
-
-    def is_arriving(self, stop: Stop, seconds_to_departure: int, seconds_to_arrival: int) -> bool:
+    def is_arriving(self, stop: Stop, seconds_to_arrival: int, seconds_to_departure: int) -> bool:
         """
         Determines whether the transit is currently arriving at a given stop.
-
-        Args:
-            stop (Stop): The target stop.
-            seconds_to_departure (int): Time in seconds until departure.
-            seconds_to_arrival (int): Time in seconds until arrival.
-
-        Returns:
-            bool: True if the transit is arriving, False otherwise.
         """
 
-        # If fresh vehicle data is available
-        if self.mbta_vehicle and self.is_vehicle_data_fresh:
+        # If live vehicle data is available
+        if self.mbta_vehicle and self.is_vehicle_data_live:
             vehicle_stop = self.mbta_vehicle.current_stop_sequence
             vehicle_status = self.mbta_vehicle.current_status
 
             # If vehicle is approaching the stop
             if vehicle_stop == stop.stop_sequence and vehicle_status == "INCOMING_AT":
-                # Live vehicle data confirms arrival
-                if self.is_vehicle_data_live:
-                    return True
+                return True
+            else:
+                return False
 
-                # If arrival time is within the buffer, consider it arriving
-                if seconds_to_arrival + self.VEHICLE_DATA_BUFFER_TIME >= 0:
-                    return True
-
-        # If no fresh vehicle data, determine arrival based on time conditions
-        return 0 <= seconds_to_arrival <= self.COUNTDOWN_TRESHOLD and seconds_to_departure > self.COUNTDOWN_TRESHOLD
+        # If no vehicle data, rely strictly on schedule, arrival within the th
+        return  0 <= seconds_to_arrival <= self.STOP_COUNTDOWN_THRESHOLD and seconds_to_departure > self.STOP_COUNTDOWN_THRESHOLD
