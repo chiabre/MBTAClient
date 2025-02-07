@@ -108,19 +108,28 @@ class MBTAClient:
             headers["If-Modified-Since"] = last_modified
         headers["Accept-Encoding"] = "gzip"
 
+        # Only obfuscate the token if the log level is DEBUG
+        if self._logger.isEnabledFor(logging.DEBUG):
+            # Create a copy of the headers and obfuscate the api_key
+            obfuscated_headers = headers.copy()
+            if "api_key" in obfuscated_headers:
+                obfuscated_headers["api_key"] = "***"
+        else:
+            obfuscated_headers = headers
+            
         try:
             async with MBTASessionManager.semaphore:
                 
-                self._logger.debug("Request: {method} {url} {headers} {params}")
+                self._logger.debug("Request: %s %s %s %s", method, url, headers, params)
                 
                 response: aiohttp.ClientResponse = await session.request(
                     method, url,
-                    params=params, 
+                    params=params,
                     headers=headers
                 )
 
                 # Log the response status
-                self._logger.debug(f"Response status: {response.status}")
+                self._logger.debug("Response for %s: %s", url, response.status)
 
                 if response.status == 403:
                     self._logger.error("Authentication error: Invalid API key (HTTP 403).")
@@ -134,10 +143,9 @@ class MBTAClient:
                     if cached_data is not None:
                         if self._cache_manager.stats:
                             self._cache_manager.cache_stats.increase_counter(CacheEvent.HIT)
-                        self._logger.debug("Cache hit: %s", url)
                         return cached_data, timestamp
                     else:
-                        raise MBTAClientError(f"Cache empty for 304 response: {url}")
+                        raise MBTAClientError(f"Cache empty despite 304 response: {url}")
 
                 response.raise_for_status()
                 
@@ -156,8 +164,8 @@ class MBTAClient:
             raise TimeoutError from error
         
         except Exception as error:
-            self._logger.error("Timeout during request to %s: %s", url, error)
-            raise MBTAClientError("Unexpected error during request.") from error
+            self._logger.error("Error during request to %s: %s", url, error)
+            raise MBTAClientError("Error during request.") from error
 
 
     async def fetch_route(self, id: str, params: Optional[Dict[str, Any]] = None) -> Tuple[MBTARoute, float]:
