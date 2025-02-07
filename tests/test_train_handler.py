@@ -48,7 +48,7 @@ async def test_handler(departure_stop_name, arrival_stop_name, train):
             mbta_client=mbta_client,
             departure_stop_name=departure_stop_name,
             arrival_stop_name=arrival_stop_name,
-            trips_name = train,
+            trip_name = train,
             max_trips=1
         )
 

@@ -124,15 +124,25 @@ class MBTABaseHandler:
 
         try:
 
-            ####
-            params_predictions = None
-            if params and "filter[date]" in params.keys():
-                params_predictions = params.copy()
-                del params_predictions["filter[date]"]
-            ####
-
             task_schedules = asyncio.create_task(self.__fetch_schedules(params))
-            task_predictions = asyncio.create_task(self.__fetch_predictions(params_predictions))
+   
+            task_predictions = None
+            
+            if params and ("filter[date]" in params.keys() or "filter[min_time]" in params.keys()):
+                params_predictions = params.copy()
+                
+                if "filter[min_time]" in params.keys():
+                    del params_predictions["filter[min_time]"]
+                
+                if "filter[date]" in params.keys():
+                    del params_predictions["filter[date]"]
+                    if datetime.fromisoformat(params['filter[date]']).date() == datetime.now().date():
+                        task_predictions = asyncio.create_task(self.__fetch_predictions(params_predictions))
+                else:
+                    task_predictions = asyncio.create_task(self.__fetch_predictions(params_predictions))
+            
+            else:
+                task_predictions = asyncio.create_task(self.__fetch_predictions(params))
 
             mbta_schedules, timestamp = await task_schedules
 
@@ -145,9 +155,10 @@ class MBTABaseHandler:
                 self._logger.debug("MBTA Schedules data are up-to-date. Skipping processing.")
                 trips = self._last_processed_scheduling['data']
 
-            mbta_predictions, _ = await task_predictions
+            if task_predictions:
+                mbta_predictions, _ = await task_predictions
 
-            trips = await self.__process_scheduling(schedulings=mbta_predictions, trips=trips)
+                trips = await self.__process_scheduling(schedulings=mbta_predictions, trips=trips)
 
             return trips
 
