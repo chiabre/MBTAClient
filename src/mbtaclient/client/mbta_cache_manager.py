@@ -78,7 +78,7 @@ class MBTACacheManager:
         self,
         path: str,
         params: Optional[Dict[str, Any]],
-        data: Any, 
+        data: Any,
         last_modified: Optional[str] = None) -> float:
         """Update the server-side cache with data."""
         key = self.generate_cache_key(path, params)
