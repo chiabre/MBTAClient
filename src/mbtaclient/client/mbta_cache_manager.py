@@ -65,13 +65,8 @@ class MBTACacheManager:
         key = self.generate_cache_key(path, params)
         cached_entry = self._cache.get(key)
         if cached_entry:
-            if self._is_cache_entry_valid(cached_entry):
-                self._cache.move_to_end(key, last=True)  # Move accessed item to the end (LRU)
-                return cached_entry["data"], cached_entry["timestamp"], cached_entry["last_modified"]
-            else:
-                del self._cache[key]
-                if self.stats:
-                    self.cache_stats.increase_counter(CacheEvent.EVICTION)
+            self._cache.move_to_end(key, last=True)  # Move accessed item to the end (LRU)
+            return cached_entry["data"], cached_entry["timestamp"], cached_entry["last_modified"]
         return None, None, None
 
     def update_cache(
@@ -92,11 +87,6 @@ class MBTACacheManager:
         if self.stats:
             self.cache_stats.increase_counter(CacheEvent.UPDATE,cache_size=len(self._cache))
         return timestamp
-
-    def _is_cache_entry_valid(self, cached_entry: Dict) -> bool:
-        """Check if the cache entry is valid."""
-        # You can add custom logic here, e.g., check for expiration time
-        return True
 
 class MBTACacheManagerStats:
 

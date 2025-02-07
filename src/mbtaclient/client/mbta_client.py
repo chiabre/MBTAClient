@@ -159,13 +159,26 @@ class MBTAClient:
 
                 return data, timestamp
 
+        except MBTAAuthenticationError as error:
+            self._logger.error("Authentication failed: %s", error)
+            raise
+
+        except MBTATooManyRequestsError as error:
+            self._logger.error("Too many requests: %s", error)
+            raise
+
         except TimeoutError as error:
             self._logger.error("Timeout during request to %s: %s", url, error)
-            raise TimeoutError from error
-        
+            raise
+
+        except aiohttp.ClientResponseError as error:
+            request_url = str(error.request_info.url) if error.request_info else "Unknown URL"
+            self._logger.error("Client response error (HTTP %s) for %s: %s", error.status, request_url, error.message)
+            raise MBTAClientError("Client response error.", status_code=error.status, reason=error.message, url=request_url) from error
+
         except Exception as error:
-            self._logger.error("Error during request to %s: %s", url, error)
-            raise MBTAClientError("Error during request.") from error
+            self._logger.error("Unexpected error during request to %s: %s", url or "Unknown URL", error)
+            raise MBTAClientError("Unexpected error during request.", url=url or "Unknown URL") from error
 
 
     async def fetch_route(self, id: str, params: Optional[Dict[str, Any]] = None) -> Tuple[MBTARoute, float]:
@@ -242,17 +255,17 @@ class MBTATooManyRequestsError(Exception):
 
 class MBTAClientError(Exception):
     """Custom exception for MBTA client errors."""
+    
     def __init__(self, message, status_code=None, reason=None, url=None):
-        self.message = message
         self.status_code = status_code
         self.reason = reason
         self.url = url
-        super().__init__(self.__str__())
 
-    def __str__(self):
-        base_message = f"MBTAClientError: {self.message}"
-        if self.status_code:
-            base_message += f" (HTTP {self.status_code} - {self.reason})"
-        if self.url:
-            base_message += f" | URL: {self.url}"
-        return base_message
+        details = []
+        if status_code:
+            details.append(f"HTTP {status_code} - {reason or 'Unknown reason'}")
+        if url:
+            details.append(f"URL: {url}")
+
+        full_message = f"{message} ({', '.join(details)})" if details else message
+        super().__init__(full_message)  # Pass only the message to the base Exception class
