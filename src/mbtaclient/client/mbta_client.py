@@ -150,7 +150,7 @@ class MBTAClient:
 
                 if response.status == 304:
                     if cached_data is not None:
-                        if self._cache_manager:
+                        if self._cache_manager.cache_stats:
                             self._cache_manager.cache_stats.increase_counter(CacheEvent.HIT)
                         return cached_data, timestamp
                     else:
@@ -163,7 +163,7 @@ class MBTAClient:
                 if last_modified:
                     timestamp = self._cache_manager.update_cache(path=path, params=params, data=data, last_modified=last_modified)
                 
-                if self._cache_manager.stats:
+                if self._cache_manager.cache_stats:
                     self._cache_manager.cache_stats.increase_counter(CacheEvent.MISS)
 
                 return data, timestamp

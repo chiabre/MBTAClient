@@ -30,10 +30,8 @@ class MBTACacheManager:
         self._max_cache_size = max_cache_size
         self._cache = OrderedDict()  # Use OrderedDict for LRU behavior
         self._logger = logger or logging.getLogger(__name__)
-        self.stats = False
         self.cache_stats = None
         if requests_per_stats_report > 0:
-            self.stats = True
             self.cache_stats = MBTACacheManagerStats(
                 max_cache_size=max_cache_size,
                 requests_per_stats_report=requests_per_stats_report,
