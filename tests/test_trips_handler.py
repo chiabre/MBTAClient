@@ -39,7 +39,7 @@ async def test_handler(departure_stop_name, arrival_stop_name, route_type):
     API_KEY = os.getenv("API_KEY")
     
     # Initialize MBTA Cache Manager and Client
-    cache_manager = MBTACacheManager(stats_interval=10)
+    cache_manager = MBTACacheManager(requests_per_stats_report=10)
     async with MBTAClient(cache_manager=cache_manager, api_key=API_KEY) as mbta_client:
         
         print(f"Testing TripsHandelr for: {departure_stop_name} {arrival_stop_name} {route_type}")
