@@ -1,6 +1,7 @@
 from asyncio import sleep
 from datetime import datetime
 from inspect import isdatadescriptor
+import logging
 import pytest
 from dotenv import load_dotenv
 import os
@@ -55,7 +56,7 @@ async def test_handler(departure_stop_name, arrival_stop_name, route_type):
         
         # Fetch trips using the handler
         trips = await handler.update()
-
+        trips = await handler.update()
         # Assertions to verify handler functionality
         assert trips is not None, f"No trips returned for stop: {departure_stop_name} or {arrival_stop_name}"
         assert len(trips) <= max_trips, f"More trips than expected for stop: {departure_stop_name} or {arrival_stop_name}"
