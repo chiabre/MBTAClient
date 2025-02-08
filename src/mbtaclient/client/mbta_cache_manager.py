@@ -95,7 +95,7 @@ class MBTACacheManager:
         """Update the server-side cache with data."""
         try:
             key = self.generate_cache_key(path, params)
-            timestamp = time.time()
+            timestamp = int(time.time())
             self._cache[key] = {
                 "data": data,
                 "timestamp": timestamp,
@@ -105,6 +105,7 @@ class MBTACacheManager:
             if self.cache_stats:
                 self.cache_stats.increase_counter(CacheEvent.UPDATE, cache_size=len(self._cache))
             return timestamp
+        
         except Exception as e:
             self._logger.error("Error updating cache: %s", e, exc_info=True)
             return 0.0
