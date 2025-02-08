@@ -55,7 +55,7 @@ async def test_handler(stop_name, route_type):
         
         # Fetch trips using the handler
         trips = await handler.update()
-        
+        trips = await handler.update()
         # Assertions to verify handler functionality
         assert trips is not None, f"No trips returned for stop: {stop_name}"
         assert len(trips) <= max_trips, f"More trips than expected for stop: {stop_name}"
