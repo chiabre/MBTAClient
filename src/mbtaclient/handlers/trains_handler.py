@@ -75,7 +75,7 @@ class TrainsHandler(MBTABaseHandler):
             # Initialize trips
             weekly_trips: list[dict[str, Trip]] = []
 
-            for i in range(8):
+            for i in range(7):
                 daily_trip: dict[str, Trip] = {}
                 date_to_try = (now + timedelta(days=i)).strftime('%Y-%m-%d')
 
@@ -98,7 +98,7 @@ class TrainsHandler(MBTABaseHandler):
                     break
                 
                 if len(weekly_trips) == 0:
-                    if i == 7:
+                    if i == 6:
                         self._logger.error(f"No trips between the provided stops till {date_to_try}")
                         raise MBTATripError(f"No trips between the provided stops till {date_to_try}")
                     continue
