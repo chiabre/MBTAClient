@@ -1,7 +1,6 @@
 from asyncio import sleep
 from datetime import datetime
 from inspect import isdatadescriptor
-import logging
 import pytest
 from dotenv import load_dotenv
 import os
