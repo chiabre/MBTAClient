@@ -441,8 +441,9 @@ class Trip:
         #if vehicle data (for this use case we don't need to check freshness...)
         if self.mbta_vehicle:
             vehicle_stop = self.mbta_vehicle.current_stop_sequence
+            vehicle_status = self.mbta_vehicle.current_status
             # if the vehicle is at or after the arrival stop
-            if vehicle_stop and vehicle_stop >= stop.stop_sequence:
+            if vehicle_stop and vehicle_stop > stop.stop_sequence or (vehicle_stop == stop.stop_sequence and vehicle_status == "STOPPED_AT"):
 
                 if filtering_grace_period > 0:
                     return seconds_to_arrival + filtering_grace_period <= 0
