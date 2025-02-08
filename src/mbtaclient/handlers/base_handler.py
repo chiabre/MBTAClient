@@ -6,11 +6,9 @@ from abc import abstractmethod
 import traceback
 from typing import Optional, Tuple, Union
 
-
 from ..mbta_object_store import MBTARouteObjStore, MBTAStopObjStore
 
 from ..client.mbta_client import MBTAClient
-from ..client.mbta_cache_manager import MBTACacheManager
 
 from ..trip import Trip
 from ..stop import Stop, StopType
@@ -41,7 +39,11 @@ class MBTABaseHandler:
         self._mbta_trip_stops_ids = set()
 
         #self._trips: dict[str, Trip] = {}  # Dictionary to store Trip objects, keyed by trip ID
-        self._cache_manager = MBTACacheManager()
+
+        self._last_processed_scheduling = {
+             'data': None,
+             'timestamp': None
+        }
 
         self._logger = logger or logging.getLogger(__name__)  # Logger instance
 
@@ -143,26 +145,15 @@ class MBTABaseHandler:
                 task_predictions = asyncio.create_task(self.__fetch_predictions(params))
 
             mbta_schedules, timestamp = await task_schedules
-            
-            ## UGLY! using improperly the cache manager to store processed schedule, 
-            cached_data, _, cached_timestamp = self._cache_manager.get_cached_data(path=params,params=None)
-            
-            if cached_timestamp == timestamp:
-                self._logger.debug("MBTA schedules data are up-to-date. Skipp processing.")
-                trips = cached_data
-            else:
-                self._logger.debug("New MBTA schedules data detected. Processing.")
+
+            if self._last_processed_scheduling['timestamp'] != timestamp:
+                self._logger.debug("New MBTA schedules data detected. Processing...")
                 trips = await self.__process_scheduling(schedulings=mbta_schedules,trips=trips)
-                self._cache_manager.update_cache(path=params,params=None,data=trips,last_modified=timestamp)
-            
-            # if self._last_processed_scheduling['timestamp'] != timestamp:
-            #     self._logger.debug("New MBTA schedules data detected. Processing...")
-            #     trips = await self.__process_scheduling(schedulings=mbta_schedules,trips=trips)
-            #     self._last_processed_scheduling['data'] = trips
-            #     self._last_processed_scheduling['timestamp'] = timestamp
-            # else:
-            #     self._logger.debug("MBTA Schedules data are up-to-date. Skipping processing.")
-            #     trips = self._last_processed_scheduling['data']
+                self._last_processed_scheduling['data'] = trips
+                self._last_processed_scheduling['timestamp'] = timestamp
+            else:
+                self._logger.debug("MBTA Schedules data are up-to-date. Skipping processing.")
+                trips = self._last_processed_scheduling['data']
 
             if task_predictions:
                 mbta_predictions, _ = await task_predictions
