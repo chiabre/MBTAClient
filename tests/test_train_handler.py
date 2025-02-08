@@ -54,7 +54,7 @@ async def test_handler(departure_stop_name, arrival_stop_name, train):
 
         # Fetch trips using the handler
         trips = await handler.update()
-        trips = await handler.update()
+        
         # Assertions to verify handler functionality
         assert trips is not None, f"No trips returned for stop: {departure_stop_name} or {arrival_stop_name}"
         
