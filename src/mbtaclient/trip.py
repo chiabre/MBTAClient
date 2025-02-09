@@ -208,7 +208,7 @@ class Trip:
 
     @property
     def departure_time_to(self) -> Optional[int]:
-        return int(self._departure_stop.time_to.total_seconds()) if self._departure_stop and self._departure_stop.time_to else None
+        return int(self._departure_stop.time_to_departure.total_seconds()) if self._departure_stop and self._departure_stop.time_to_departure else None
 
     @property
     def departure_mbta_countdown(self) -> Optional[str]:
@@ -241,7 +241,7 @@ class Trip:
 
     @property
     def arrival_time_to(self) -> Optional[int]:
-        return int(self._arrival_stop.time_to.total_seconds()) if self._arrival_stop and self._arrival_stop.time_to else None
+        return int(self._arrival_stop.time_to_arrival.total_seconds()) if self._arrival_stop and self._arrival_stop.time_to_arrival else None
 
     @property
     def arrival_mbta_countdown(self) -> Optional[str]:
@@ -336,32 +336,24 @@ class Trip:
 
         if not stop.time:
             return None
-        now = datetime.now().astimezone()
 
-        # Calculate time deltas
-        arrival_time = stop.arrival_time or stop.time
-        departure_time = stop.departure_time or stop.time
+        time_to_departure = stop.time_to_departure.total_seconds() if stop.time_to_departure else stop.time_to.total_seconds()
+        time_to_arrival = stop.time_to_arrival.total_seconds() if stop.time_to_arrival else stop.time_to.total_seconds()
 
-        arrival_delta = arrival_time.astimezone() - now
-        departure_delta = departure_time.astimezone() - now
-
-        seconds_to_arrival = int(arrival_delta.total_seconds())
-        seconds_to_departure = int(departure_delta.total_seconds())
-
-        if stop_type == StopType.ARRIVAL and self.has_arrived(stop=stop, seconds_to_arrival=seconds_to_arrival):
+        if stop_type == StopType.ARRIVAL and self.has_arrived(stop=stop, time_to_arrival=time_to_arrival):
             return "Arrived"
 
-        if self.has_departed(stop=stop,seconds_to_departure=seconds_to_departure):
+        if self.has_departed(stop=stop,time_to_departure=time_to_departure):
             return "Departed"
 
-        if self.is_boarding(stop=stop, seconds_to_arrival=seconds_to_arrival, seconds_to_departure=seconds_to_departure):
+        if self.is_boarding(stop=stop, time_to_arrival=time_to_arrival, time_to_departure=time_to_departure):
             return "Boarding"
 
-        if stop.arrival_time and self.is_arriving(stop=stop, seconds_to_arrival=seconds_to_arrival):
+        if stop.arrival_time and self.is_arriving(stop=stop, time_to_arrival=time_to_arrival):
             return "Arriving"
 
         # Default to formatted time countdown
-        return self._format_time(seconds_to_arrival) if seconds_to_arrival >= 30 else None
+        return self._format_time(time_to_arrival) if time_to_arrival >= 30 else None
 
     def _get_stop_mbta_countdown(self, stop_type: StopType) -> Optional[str]:
         """Determine the countdown to a stop based on vehicle and time following
@@ -377,7 +369,7 @@ class Trip:
             if not stop.time:
                 return None
 
-            seconds = (stop.time.astimezone() - datetime.now().astimezone()).total_seconds()
+            seconds = stop.time_to.total_seconds()
 
             if seconds < 0:
                 return None
@@ -404,9 +396,9 @@ class Trip:
     def _format_time(self, seconds_to_arrival: int) -> Optional[str]:
         if seconds_to_arrival < 0:
             return None
-        minutes = (seconds_to_arrival // 60) % 60
-        hours = (seconds_to_arrival // 3600) % 24
-        days = seconds_to_arrival // 86400
+        minutes = int((seconds_to_arrival // 60) % 60)
+        hours = int((seconds_to_arrival // 3600) % 24)
+        days = int(seconds_to_arrival // 86400)
 
         if days > 0:
             return f"{days}d {hours}h {minutes}m"
@@ -416,7 +408,7 @@ class Trip:
             return f"{minutes} min"
         return "1 min"
     
-    def has_departed(self, stop: Stop, seconds_to_departure: int, filtering_grace_period: Optional[int] = 0) -> bool:
+    def has_departed(self, stop: Stop, time_to_departure: int, filtering_grace_period: Optional[int] = 0) -> bool:
         """
         Determines whether the transit has departed a given stop.
         """
@@ -427,15 +419,14 @@ class Trip:
             if vehicle_stop > stop.stop_sequence:
                 # if filtering grace period
                 if filtering_grace_period > 0:
-                    return seconds_to_departure + filtering_grace_period <= 0
+                    return time_to_departure + filtering_grace_period <= 0
                 return True
-            return False
-
+            
         # If no fresh vehicle data, determine departure based on time threshold
-        return seconds_to_departure + filtering_grace_period <= 0
+        return time_to_departure + filtering_grace_period <= 0
 
 
-    def has_arrived(self, stop: Stop, seconds_to_arrival: int, filtering_grace_period: Optional[int] = 0) -> bool:
+    def has_arrived(self, stop: Stop, time_to_arrival: int, filtering_grace_period: Optional[int] = 0) -> bool:
         """
         Determines whether the transit has arrived at a given stop.
         """
@@ -448,15 +439,14 @@ class Trip:
             if vehicle_stop > stop.stop_sequence or (vehicle_stop == stop.stop_sequence and vehicle_status == "STOPPED_AT"):
 
                 if filtering_grace_period > 0:
-                    return seconds_to_arrival + filtering_grace_period <= 0
+                    return time_to_arrival + filtering_grace_period <= 0
                 return True
-            return False
             
         # If no fresh vehicle data, determine arrival based on time threshold
-        return seconds_to_arrival + filtering_grace_period <= 0
+        return time_to_arrival + filtering_grace_period <= 0
 
 
-    def is_boarding(self, stop: Stop, seconds_to_arrival: int, seconds_to_departure: int) -> bool:
+    def is_boarding(self, stop: Stop, time_to_arrival: int, time_to_departure: int) -> bool:
         """
         Determines whether the transit is currently boarding at a given stop.
         """
@@ -467,23 +457,23 @@ class Trip:
 
             if vehicle_stop == stop.stop_sequence and vehicle_status == "STOPPED_AT":
 
-                # Case 1: Fresh vehicle data, within the departure buffer
-                if self.is_vehicle_data_fresh and self.VEHICLE_DATA_BOARDING_BUFFER_TIME_POST_DEPARTURE <= seconds_to_departure <= self.VEHICLE_DATA_BOARDING_BUFFER_TIME_PRE_DEPARTURE:
-                        return True
+                # Case 1: Live vehicle data, within the departure buffer
+                if self.is_vehicle_data_live and time_to_departure <= self.VEHICLE_DATA_BOARDING_BUFFER_TIME_PRE_DEPARTURE:
+                    return True
 
                 # Case 2: Live vehicle data
-                if self.is_vehicle_data_live:
+                if self.is_vehicle_data_fresh and self.VEHICLE_DATA_BOARDING_BUFFER_TIME_POST_DEPARTURE <= time_to_departure <= self.VEHICLE_DATA_BOARDING_BUFFER_TIME_PRE_DEPARTURE:
                     return True
                 else:
                     return False  # Explicitly return False when conditions are not met
  
-            elif vehicle_stop > 0:
+            elif vehicle_stop > stop.stop_sequence:
                 return False
             
         # If no vehicle data, rely strictly on schedule-based conditions
-        return (seconds_to_arrival < 0 <= seconds_to_departure) and (0 <= seconds_to_departure <= self.STOP_COUNTDOWN_THRESHOLD)
+        return (time_to_arrival < 0 <= time_to_departure) and (0 <= time_to_departure <= self.STOP_COUNTDOWN_THRESHOLD)
 
-    def is_arriving(self, stop: Stop, seconds_to_arrival: int) -> bool:
+    def is_arriving(self, stop: Stop, time_to_arrival: int) -> bool:
         """
         Determines whether the transit is currently arriving at a given stop.
         """
@@ -496,8 +486,10 @@ class Trip:
             # If vehicle is approaching the stop
             if vehicle_stop == stop.stop_sequence and vehicle_status == "INCOMING_AT":
                 return True
+            elif vehicle_stop == stop.stop_sequence and vehicle_status == "IN_TRANSIT_TO" and -self.STOP_COUNTDOWN_THRESHOLD < time_to_arrival < self.STOP_COUNTDOWN_THRESHOLD:
+                return True
             else:
                 return False
 
         # If no vehicle data, rely strictly on schedule, arrival within the th
-        return  0 <= seconds_to_arrival <= self.STOP_COUNTDOWN_THRESHOLD
+        return  0 <= time_to_arrival <= self.STOP_COUNTDOWN_THRESHOLD
