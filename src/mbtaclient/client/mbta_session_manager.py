@@ -1,14 +1,18 @@
 import asyncio
 import logging
+import random
 from typing import Optional
 import aiohttp
 
 MAX_CONCURRENT_REQUESTS = 5
 REQUEST_TIMEOUT = 10
+MAX_RETRIES = 3
+INITIAL_BACKOFF = 1
+BACKOFF_MULTIPLIER = 2
 
 class MBTASessionManager:
     """Singleton class to manage a shared aiohttp.ClientSession."""
-
+    
     _session: Optional[aiohttp.ClientSession] = None
     _semaphore: Optional[asyncio.Semaphore] = None
     _logger: Optional[logging.Logger] = None
@@ -21,14 +25,17 @@ class MBTASessionManager:
         cls,
         session: Optional[aiohttp.ClientSession] = None,
         logger: Optional[logging.Logger] = None,
-        max_concurrent_requests: Optional[int] = None,
-        timeout: Optional[int] = None,
+        max_concurrent_requests: Optional[int] = MAX_CONCURRENT_REQUESTS,
+        timeout: Optional[int] = REQUEST_TIMEOUT,
     ):
         """Configure the SessionManager."""
         cls._logger = logger or logging.getLogger(__name__)
-        cls._max_concurrent_requests = max_concurrent_requests or cls._max_concurrent_requests
-        cls._timeout = timeout or cls._timeout
-        cls.semaphore = asyncio.Semaphore(cls._max_concurrent_requests)
+        cls._max_concurrent_requests = (
+            max_concurrent_requests if max_concurrent_requests is not None else MAX_CONCURRENT_REQUESTS
+        )
+        cls._timeout = timeout if timeout is not None else REQUEST_TIMEOUT
+        # Always initialize the semaphore here.
+        cls._semaphore = asyncio.Semaphore(cls._max_concurrent_requests)
         if session:
             cls._session = session
             cls._own_session = False
@@ -36,11 +43,14 @@ class MBTASessionManager:
 
     @classmethod
     async def get_session(cls) -> aiohttp.ClientSession:
-        """Get the shared aiohttp.ClientSession instance, creating it if necessary."""
+        """Get (or create) the shared aiohttp.ClientSession instance."""
         if cls._session is None or cls._session.closed:
             cls._logger.debug("Creating a new aiohttp.ClientSession instance")
             cls._session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=cls._timeout))
             cls._own_session = True
+        # Ensure the semaphore is available.
+        if cls._semaphore is None:
+            raise RuntimeError("Semaphore not initialized. Please call MBTASessionManager.configure() first.")
         return cls._session
 
     @classmethod
@@ -61,13 +71,61 @@ class MBTASessionManager:
         """Clean up resources when shutting down."""
         cls._logger.debug("Cleaning up MBTASessionManager resources")
         await cls.close_session()
-        cls.semaphore = None
+        # Do not set _semaphore to None here—in case you need to reuse the manager later.
 
     @classmethod
-    async def __aenter__(cls):
-        await cls.get_session()
-        return cls
+    async def request_with_retries(cls, method: str, url: str, **kwargs) -> Optional[aiohttp.ClientResponse]:
+        """Make an HTTP request with retries and exponential backoff."""
+        session = await cls.get_session()
+        retries = 0
+        backoff = INITIAL_BACKOFF
 
-    @classmethod
-    async def __aexit__(cls, exc_type, exc, tb):
-        await cls.cleanup()
+        # Ensure the semaphore is initialized.
+        if cls._semaphore is None:
+            raise RuntimeError("Semaphore not initialized. Please call MBTASessionManager.configure() first.")
+
+        async with cls._semaphore:
+            while retries <= MAX_RETRIES:
+                try:
+                    cls._logger.debug("Request: %s %s (try %d)", method, url, retries + 1)
+                    # Directly await the request so that the response remains open
+                    response = await session.request(method, url, **kwargs)
+                    
+                    if response.status < 400:
+                        # Successful response or a client error that we don't retry
+                        return response
+                    elif response.status in (502, 503, 504):
+                        cls._logger.warning(
+                            "Request failed with status %d. Retrying in %d seconds...", response.status, backoff
+                        )
+                        # Release connection resources before retrying.
+                        await response.release()
+                    else:
+                        cls._logger.error("Request failed with status %d. Not retrying.", response.status)
+                        return response  # Return the error response without retrying
+
+                except (aiohttp.ClientError, asyncio.TimeoutError, asyncio.ServerDisconnectedError) as e:
+                    cls._logger.warning("Request error: %s. Retrying in %d seconds...", e, backoff)
+                    if isinstance(e, aiohttp.ClientConnectionError):
+                        cls._logger.error("Client connection error occurred: %s", e)
+                    elif isinstance(e, asyncio.TimeoutError):
+                        cls._logger.error("Request timed out: %s", e)
+                    elif isinstance(e, aiohttp.ClientError):
+                        cls._logger.error("A client error occurred: %s", e)
+
+                retries += 1
+                # Add jitter to the backoff
+                await asyncio.sleep(backoff + random.uniform(0, 0.2))
+                backoff *= BACKOFF_MULTIPLIER
+
+        cls._logger.error("Max retries reached for request: %s %s", method, url)
+        return None  # Return None if all retries fail.
+
+
+class MBTASessionManagerContext:
+    async def __aenter__(self):
+        await MBTASessionManager.get_session()
+        return MBTASessionManager
+
+    async def __aexit__(self, exc_type, exc, tb):
+        await MBTASessionManager.cleanup()

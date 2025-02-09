@@ -494,26 +494,19 @@ class MBTABaseHandler:
                     if arrival_stop and not arrival_stop.arrival:
                         continue
 
-                now = datetime.now().astimezone()       
+                    
 
                 # Remove trips that have already departed + REMOVAL_BUFFER_THRESHOLD
                 if remove_departed and departure_stop:
+                
                     
-                    departure_time = departure_stop.departure_time or departure_stop.time
-                    departure_delta = departure_time.astimezone() - now
-                    seconds_to_departure = int(departure_delta.total_seconds())
-                    
-                    if trip.has_departed(departure_stop, seconds_to_departure=seconds_to_departure, filtering_grace_period=self.FILTER_GRACE_PERIOD):
+                    if trip.has_departed(departure_stop, time_to_departure=departure_stop.time_to_departure.total_seconds(), filtering_grace_period=self.FILTER_GRACE_PERIOD):
                         continue
                 
                 # Remove trips that have already arrived + REMOVAL_BUFFER_THRESHOLD
                 if arrival_stop:
-                   
-                    arrival_time = arrival_stop.arrival_time or arrival_stop.time
-                    arrival_delta = arrival_time.astimezone() - now
-                    seconds_to_arrival = int(arrival_delta.total_seconds())
                 
-                    if trip.has_arrived(arrival_stop,seconds_to_arrival=seconds_to_arrival,filtering_grace_period=self.FILTER_GRACE_PERIOD):
+                    if trip.has_arrived(arrival_stop,time_to_arrival=arrival_stop.time_to_arrival.total_seconds(),filtering_grace_period=self.FILTER_GRACE_PERIOD):
                         continue
 
                 # Add the valid trip to the processed trips
