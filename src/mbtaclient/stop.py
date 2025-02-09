@@ -120,6 +120,18 @@ class Stop:
         if self.time:
             return self.time.astimezone() - datetime.now().astimezone()
         return None
+    
+    @property
+    def time_to_departure(self) -> Optional[timedelta]:
+        if self.departure_time:
+            return self.departure_time.astimezone() - datetime.now().astimezone()
+        return None
+    
+    @property
+    def time_to_arrival(self) -> Optional[timedelta]:
+        if self.arrival_time:
+            return self.arrival_time.astimezone() - datetime.now().astimezone()
+        return None
 
     def __repr__(self) -> str:
         return (f"TripStop({self.stop_type.value}): {self.mbta_stop_id} @ {self.time.replace(tzinfo=None)}"
