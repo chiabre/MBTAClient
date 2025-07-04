@@ -16,6 +16,7 @@ from src.mbtaclient.handlers.trains_handler import TrainsHandler
     [
         ("South Station", "Back Bay", "509"),
         ("Worcester", "South Station", "518"),
+        ("Swampscott", "North Station", "12"),
         #("West Natick", "South Station", "520"),
     ]
 )
