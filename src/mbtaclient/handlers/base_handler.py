@@ -484,6 +484,8 @@ class MBTABaseHandler:
                 if require_both_stops and (
                     not departure_stop
                     or not arrival_stop
+                    or departure_stop.stop_sequence is None  # <-- FIX for #29
+                    or arrival_stop.stop_sequence is None   # <-- FIX for #29
                     or departure_stop.stop_sequence > arrival_stop.stop_sequence
                 ):
                     continue
