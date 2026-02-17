@@ -258,9 +258,15 @@ class Trip:
         if self.mbta_alerts:
             for mbta_alert in self.mbta_alerts:
                 effect = " ".join(mbta_alert.effect.split("_"))
-                short_header = mbta_alert.short_header
-                alerts_details.add(effect + ": " + short_header)
-            return alerts_details
+                short_header = mbta_alert.short_header.strip()
+                header = mbta_alert.header.strip() if hasattr(mbta_alert, "header") else ""
+                
+                # Use short_header if available, otherwise fallback to full header
+                detail = short_header if short_header else header
+                if detail:  # only add if detail is not empty
+                    alerts_details.add(f"{effect}: {detail}")
+            
+            return alerts_details if alerts_details else None
         return None
 
     def get_stop_by_type(self, stop_type: str) -> Optional[Stop]:
