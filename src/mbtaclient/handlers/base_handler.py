@@ -407,8 +407,8 @@ class MBTABaseHandler:
 
             for informed_entity in mbta_alert.informed_entities:
 
-                active_period_start = mbta_alert.active_period_start.replace(tzinfo=None)
-                active_period_end = mbta_alert.active_period_end.replace(tzinfo=None)
+                active_period_start = mbta_alert.active_period_start.replace(tzinfo=None) if mbta_alert.active_period_start else None
+                active_period_end = mbta_alert.active_period_end.replace(tzinfo=None) if mbta_alert.active_period_end else None
 
                 try:
                     if (
