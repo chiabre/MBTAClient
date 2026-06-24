@@ -14,7 +14,7 @@ from src.mbtaclient.handlers.trains_handler import TrainsHandler
 @pytest.mark.parametrize(
     "departure_stop_name, arrival_stop_name,train",
     [
-        ("South Station", "Back Bay", "509"),
+        ("South Station", "Back Bay", "505"),
         ("Worcester", "South Station", "518"),
         ("Swampscott", "North Station", "12"),
         #("West Natick", "South Station", "520"),

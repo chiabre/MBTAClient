@@ -154,15 +154,6 @@ class MBTABaseHandler:
                 self._logger.debug("New MBTA schedules data detected. Processing.")
                 trips = await self.__process_scheduling(schedulings=mbta_schedules,trips=trips)
                 self._cache_manager.update_cache(path=params,params=None,data=trips,last_modified=timestamp)
-            
-            # if self._last_processed_scheduling['timestamp'] != timestamp:
-            #     self._logger.debug("New MBTA schedules data detected. Processing...")
-            #     trips = await self.__process_scheduling(schedulings=mbta_schedules,trips=trips)
-            #     self._last_processed_scheduling['data'] = trips
-            #     self._last_processed_scheduling['timestamp'] = timestamp
-            # else:
-            #     self._logger.debug("MBTA Schedules data are up-to-date. Skipping processing.")
-            #     trips = self._last_processed_scheduling['data']
 
             if task_predictions:
                 mbta_predictions, _ = await task_predictions
@@ -304,10 +295,6 @@ class MBTABaseHandler:
             mbta_alerts, _ = await task_alerts
 
             for trip_id, trip in trips.items():
-                # # Assign the trip ID if not already set
-                # if not trip.mbta_trip and not trip.mbta_trip.id:
-                #     trip.mbta_trip.id = trip_id
-
                 # Fetch and assign the MBTA trip if not already set
                 if not trip.mbta_trip:
                     mbta_trip, _ = await self._mbta_client.fetch_trip(id=trip_id)
@@ -374,12 +361,6 @@ class MBTABaseHandler:
 
         Returns:
             bool: True if the alert is relevant to the given trip, otherwise False.
-
-        Relevance is determined based on the following criteria:
-            - The alert matches the trip's route (route-level alert).
-            - The alert's informed entity explicitly mentions the trip ID.
-            - The alert's informed entity is tied to the departure or arrival stops with relevant activities (boarding or exiting).
-            - The trip's departure or arrival time falls within the alert's active period.
         """
 
         try:
@@ -387,12 +368,6 @@ class MBTABaseHandler:
             def check_route_level_alert(informed_entity: MBTAAlertsInformedEntity):
                 """
                 Check if the informed entity is a route-level alert matching the trip's route and direction.
-
-                Args:
-                    informed_entity (MBTAAlertsInformedEntity): The informed entity to check.
-
-                Returns:
-                    bool: True if the entity matches the route-level alert criteria, otherwise False.
                 """
                 return (
                     informed_entity.route_id == trip.mbta_route.id and
@@ -407,8 +382,9 @@ class MBTABaseHandler:
 
             for informed_entity in mbta_alert.informed_entities:
 
-                active_period_start = mbta_alert.active_period_start.replace(tzinfo=None) if mbta_alert.active_period_start else None
-                active_period_end = mbta_alert.active_period_end.replace(tzinfo=None) if mbta_alert.active_period_end else None
+                # Safely preserve/assign timezone awareness via .astimezone() instead of stripping it away
+                active_period_start = mbta_alert.active_period_start.astimezone() if mbta_alert.active_period_start else None
+                active_period_end = mbta_alert.active_period_end.astimezone() if mbta_alert.active_period_end else None
 
                 try:
                     if (
@@ -496,18 +472,13 @@ class MBTABaseHandler:
                     if arrival_stop and not arrival_stop.arrival:
                         continue
 
-                    
-
                 # Remove trips that have already departed + REMOVAL_BUFFER_THRESHOLD
                 if remove_departed and departure_stop:
-                
-                    
                     if trip.has_departed(departure_stop, time_to_departure=departure_stop.time_to_departure.total_seconds(), filtering_grace_period=self.FILTER_GRACE_PERIOD):
                         continue
                 
                 # Remove trips that have already arrived + REMOVAL_BUFFER_THRESHOLD
                 if arrival_stop:
-                
                     if trip.has_arrived(arrival_stop,time_to_arrival=arrival_stop.time_to_arrival.total_seconds(),filtering_grace_period=self.FILTER_GRACE_PERIOD):
                         continue
 
